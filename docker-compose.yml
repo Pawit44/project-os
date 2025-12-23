@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: honeypot-security:latest
+    image: sudyosh/honeypot-security
     container_name: honeypot-security
     restart: unless-stopped
 
