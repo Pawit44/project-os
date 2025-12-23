@@ -1,0 +1,93 @@
+# Honeypot Security System Configuration
+# Copy this file to config.yaml and modify as needed
+
+# Honeypot Settings
+honeypots:
+  web:
+    enabled: true
+    port: 8080
+    host: "0.0.0.0"
+
+  ssh:
+    enabled: true
+    port: 2222
+    host: "0.0.0.0"
+    # Path to SSH host key (will be generated if not exists)
+    host_key: "data/ssh_host_key"
+
+# Discord Alerting
+alerting:
+  discord:
+    enabled: true
+    webhook_url: "https://discordapp.com/api/webhooks/1452921216968167485/tz1m_6Y0DlnJLvCztUNEyIqsrG2X0LEysQJdl0zdF31KplFdISJnjvmR_62j7E3rxeag"
+    # Minimum threat level to trigger alert: LOW, MEDIUM, HIGH
+    alert_threshold: "MEDIUM"
+    # Rate limit: minimum seconds between alerts for same IP
+    rate_limit: 60
+
+# Threat Scoring Configuration
+scoring:
+  thresholds:
+    low: 5      # 0-4 = LOW
+    medium: 15  # 5-14 = MEDIUM
+                # 15+ = HIGH
+
+  # Points for each behavior
+  behaviors:
+    login_attempt: 1
+    failed_login: 2
+    bruteforce_threshold: 5  # attempts before bruteforce detection
+    bruteforce_bonus: 5
+    dangerous_command: 10
+    malware_download: 15
+    known_bad_password: 3
+
+  # Dangerous commands that trigger high score
+  dangerous_commands:
+    - "wget"
+    - "curl"
+    - "nc"
+    - "netcat"
+    - "chmod"
+    - "rm -rf"
+    - "/etc/passwd"
+    - "/etc/shadow"
+    - "base64"
+    - "python -c"
+    - "perl -e"
+    - "bash -i"
+
+# Auto Response (SOAR)
+response:
+  auto_block: true
+  # Minimum threat level to auto-block: LOW, MEDIUM, HIGH
+  block_threshold: "HIGH"
+  # Block duration in seconds (3600 = 1 hour)
+  block_duration: 3600
+  # Use iptables (Linux only, requires root)
+  use_iptables: true
+
+# Dashboard Settings
+dashboard:
+  enabled: true
+  port: 5000
+  host: "0.0.0.0"
+  # Refresh interval in seconds
+  refresh_interval: 30
+
+# GeoIP Settings
+geoip:
+  enabled: true
+  # Path to MaxMind GeoLite2-City.mmdb
+  database_path: "data/GeoLite2-City.mmdb"
+
+# Logging
+logging:
+  level: "INFO"
+  # Log file paths
+  main_log: "logs/honeypot.log"
+  attack_log: "logs/attacks.json"
+
+# Database
+database:
+  path: "data/honeypot.db"
