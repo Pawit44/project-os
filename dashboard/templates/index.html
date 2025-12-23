@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Honeypot Security{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon attack">&#9889;</div>
+            <div class="stat-info">
+                <span class="stat-value" id="total-attacks">-</span>
+                <span class="stat-label">Total Attacks</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon ip">&#127760;</div>
+            <div class="stat-info">
+                <span class="stat-value" id="unique-ips">-</span>
+                <span class="stat-label">Unique IPs</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon blocked">&#128683;</div>
+            <div class="stat-info">
+                <span class="stat-value" id="blocked-ips">-</span>
+                <span class="stat-label">Blocked IPs</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon threat">&#128680;</div>
+            <div class="stat-info">
+                <span class="stat-value" id="high-threats">-</span>
+                <span class="stat-label">High Threats</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon today">&#128197;</div>
+            <div class="stat-info">
+                <span class="stat-value" id="today-attacks">-</span>
+                <span class="stat-label">Today</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+        <div class="chart-card">
+            <h3>Attack Timeline (24h)</h3>
+            <canvas id="timelineChart"></canvas>
+        </div>
+
+        <div class="chart-card">
+            <h3>Threat Level Distribution</h3>
+            <canvas id="threatChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Second Charts Row -->
+    <div class="charts-row">
+        <div class="chart-card">
+            <h3>Top Attack Countries</h3>
+            <canvas id="countriesChart"></canvas>
+        </div>
+
+        <div class="chart-card">
+            <h3>Attack Sources</h3>
+            <canvas id="sourcesChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Top Lists Row -->
+    <div class="lists-row">
+        <div class="list-card">
+            <h3>&#128273; Top Passwords</h3>
+            <ul id="top-passwords" class="top-list">
+                <li>Loading...</li>
+            </ul>
+        </div>
+
+        <div class="list-card">
+            <h3>&#128100; Top Usernames</h3>
+            <ul id="top-usernames" class="top-list">
+                <li>Loading...</li>
+            </ul>
+        </div>
+
+        <div class="list-card">
+            <h3>&#128683; Blocked IPs</h3>
+            <ul id="blocked-list" class="top-list">
+                <li>Loading...</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Recent Attacks -->
+    <div class="recent-attacks">
+        <h3>&#9889; Recent Attacks</h3>
+        <table class="attacks-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Source</th>
+                    <th>IP Address</th>
+                    <th>Country</th>
+                    <th>Username</th>
+                    <th>Threat Level</th>
+                </tr>
+            </thead>
+            <tbody id="recent-attacks-body">
+                <tr><td colspan="6">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+        loadDashboardData();
+    }, 30000);
+
+    // Initial load
+    document.addEventListener('DOMContentLoaded', () => {
+        loadDashboardData();
+    });
+</script>
+{% endblock %}

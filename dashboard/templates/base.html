@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Honeypot Dashboard{% endblock %}</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="nav-icon">&#128737;</span>
+            Honeypot Security Dashboard
+        </div>
+        <div class="nav-links">
+            <a href="/" class="{% if request.endpoint == 'index' %}active{% endif %}">Dashboard</a>
+            <a href="/attacks" class="{% if request.endpoint == 'attacks' %}active{% endif %}">Attacks</a>
+        </div>
+        <div class="nav-status">
+            <span id="status-indicator" class="status-online"></span>
+            <span id="last-update">Updating...</span>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>Honeypot Security System &copy; 2024 | Raspberry Pi 3</p>
+    </footer>
+
+    <!-- Charts JS -->
+    <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

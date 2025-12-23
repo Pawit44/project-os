@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  honeypot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: honeypot-security:latest
+    container_name: honeypot-security
+    restart: unless-stopped
+
+    # Required for iptables (auto-blocking)
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
+    ports:
+      # Web Honeypot
+      - "8080:8080"
+      # SSH Honeypot
+      - "2222:2222"
+      # Dashboard
+      - "5000:5000"
+
+    volumes:
+      # Persist configuration
+      - ./config/config.yaml:/app/config/config.yaml:ro
+      # Persist data (database, SSH key)
+      - honeypot-data:/app/data
+      # Persist logs
+      - honeypot-logs:/app/logs
+      # GeoIP database (optional)
+      - ./data/GeoLite2-City.mmdb:/app/data/GeoLite2-City.mmdb:ro
+
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=Asia/Bangkok
+
+    networks:
+      - honeypot-net
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  honeypot-data:
+    name: honeypot-data
+  honeypot-logs:
+    name: honeypot-logs
+
+networks:
+  honeypot-net:
+    driver: bridge

@@ -1,0 +1,57 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+*.egg-info/
+.eggs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Local data (will be mounted as volumes)
+data/honeypot.db
+data/ssh_host_key
+data/ssh_host_key.pub
+logs/*.log
+logs/*.json
+
+# Config (will be mounted as volume)
+config/config.yaml
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.docker/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.log
+*.tmp
+.env
+.env.*

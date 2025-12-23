@@ -1,0 +1,4 @@
+# This directory stores data files
+# - honeypot.db: SQLite database
+# - ssh_host_key: SSH host key for honeypot
+# - GeoLite2-City.mmdb: GeoIP database (download from MaxMind)

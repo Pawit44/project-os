@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Project specific
+config/config.yaml
+data/honeypot.db
+data/ssh_host_key
+data/ssh_host_key.pub
+data/GeoLite2-City.mmdb
+logs/*.log
+logs/*.json
+
+# Keep directory structure
+!logs/.gitkeep
+!data/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/

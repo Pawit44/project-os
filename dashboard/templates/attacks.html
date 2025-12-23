@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Attack Log - Honeypot Security{% endblock %}
+
+{% block content %}
+<div class="attacks-page">
+    <div class="page-header">
+        <h2>&#9889; Attack Log</h2>
+        <div class="filters">
+            <select id="source-filter">
+                <option value="">All Sources</option>
+                <option value="WEB">Web</option>
+                <option value="SSH">SSH</option>
+            </select>
+            <select id="threat-filter">
+                <option value="">All Threats</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+            </select>
+            <input type="text" id="ip-filter" placeholder="Filter by IP...">
+            <button onclick="loadAttacks()" class="btn-refresh">Refresh</button>
+        </div>
+    </div>
+
+    <table class="attacks-table full">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Source</th>
+                <th>IP Address</th>
+                <th>Country</th>
+                <th>Username</th>
+                <th>Password</th>
+                <th>Command</th>
+                <th>Score</th>
+                <th>Level</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="attacks-body">
+            <tr><td colspan="10">Loading...</td></tr>
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        <button onclick="loadMore()" class="btn-load-more">Load More</button>
+    </div>
+</div>
+
+<script>
+    let currentOffset = 0;
+    const pageSize = 50;
+
+    function loadAttacks(append = false) {
+        if (!append) {
+            currentOffset = 0;
+        }
+
+        const source = document.getElementById('source-filter').value;
+        const threat = document.getElementById('threat-filter').value;
+        const ip = document.getElementById('ip-filter').value;
+
+        fetch(`/api/attacks?limit=${pageSize}&offset=${currentOffset}`)
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('attacks-body');
+
+                if (!append) {
+                    tbody.innerHTML = '';
+                }
+
+                if (data.attacks.length === 0 && !append) {
+                    tbody.innerHTML = '<tr><td colspan="10">No attacks recorded</td></tr>';
+                    return;
+                }
+
+                data.attacks.forEach(attack => {
+                    // Apply filters
+                    if (source && attack.source !== source) return;
+                    if (threat && attack.threat_level !== threat) return;
+                    if (ip && !attack.ip_address.includes(ip)) return;
+
+                    const row = document.createElement('tr');
+                    row.className = `threat-${attack.threat_level.toLowerCase()}`;
+
+                    const time = new Date(attack.timestamp).toLocaleString();
+                    const password = attack.password ?
+                        attack.password.substring(0, 2) + '***' : '-';
+                    const command = attack.command ?
+                        (attack.command.length > 30 ? attack.command.substring(0, 30) + '...' : attack.command) : '-';
+
+                    row.innerHTML = `
+                        <td>${time}</td>
+                        <td><span class="source-badge ${attack.source.toLowerCase()}">${attack.source}</span></td>
+                        <td class="ip-cell">${attack.ip_address}</td>
+                        <td>${attack.country || 'Unknown'}</td>
+                        <td>${attack.username || '-'}</td>
+                        <td>${password}</td>
+                        <td class="command-cell" title="${attack.command || ''}">${command}</td>
+                        <td>${attack.threat_score}</td>
+                        <td><span class="threat-badge ${attack.threat_level.toLowerCase()}">${attack.threat_level}</span></td>
+                        <td><button onclick="blockIP('${attack.ip_address}')" class="btn-block">Block</button></td>
+                    `;
+
+                    tbody.appendChild(row);
+                });
+
+                currentOffset += pageSize;
+            })
+            .catch(error => {
+                console.error('Error loading attacks:', error);
+            });
+    }
+
+    function loadMore() {
+        loadAttacks(true);
+    }
+
+    function blockIP(ip) {
+        if (!confirm(`Block IP ${ip}?`)) return;
+
+        fetch(`/api/block/${ip}`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                loadAttacks();
+            })
+            .catch(error => {
+                alert('Error blocking IP');
+                console.error(error);
+            });
+    }
+
+    // Initial load
+    document.addEventListener('DOMContentLoaded', () => {
+        loadAttacks();
+    });
+
+    // Filter change handlers
+    document.getElementById('source-filter').addEventListener('change', () => loadAttacks());
+    document.getElementById('threat-filter').addEventListener('change', () => loadAttacks());
+    document.getElementById('ip-filter').addEventListener('input', () => loadAttacks());
+</script>
+{% endblock %}
