@@ -33,14 +33,14 @@
 โครงงานนี้คือการสร้าง "เป้าหลอก" ขึ้นมาเพื่อดึงความสนใจคนร้าย ทำให้เราสามารถเฝ้าสังเกตและวิเคราะห์วิธีการโจมตีได้ทุกขั้นตอน โดยที่ไม่ต้องเอาเครื่อง Server จริงไปเสี่ยง
 
 ## 4. 🎯 Objectives
-* [ ] **Objective 1:** (เพื่อพัฒนาระบบสำหรับบันทึกการจตรวจจับและโจมตีผ่าน SSH Protocol)
-* [ ] **Objective 2:** (เพื่อศึกษาและวิเคราะห์พฤติกรรมของผู้โจมตี)
-* [ ] **Objective 3:** (เพื่อลดความเสี่ยงต่อระบบจริง)
+* [ ] **Objective 1:** เพื่อพัฒนาระบบสำหรับบันทึกการจตรวจจับและโจมตีผ่าน SSH Protocol
+* [ ] **Objective 2:** เพื่อศึกษาและวิเคราะห์พฤติกรรมของผู้โจมตี
+* [ ] **Objective 3:** เพื่อลดความเสี่ยงต่อระบบจริง
 
 ## 5. 🧩 Project Workflow
 > *แผนภาพแสดงการทำงานของระบบ (System Flow) หรือ Architecture*
 
-![Place Diagram Here](https://drive.google.com/file/d/1pjqo9deay7ofbBTvlpCJFNZMWAiHuBQB/view?usp=sharing)
+![Place Diagram Here](https://drive.google.com/file/d/1pjqo9deay7ofbBTvlpCJFNZMWAiHuBQB/view)
 
 ## 6. 🎥 Demo / Preview
 > *คลิปแสดงตัวอย่างการทำงานเบื้องต้น*
@@ -59,5 +59,5 @@
 ## 8. 📅 Next Steps
 *(แผนการดำเนินงานในขั้นต่อไป)*
 
-1.  Setup Lastberry Pi
-2.  Deployment โดยจะใช้ Lasberry Pi เป็น Server
+1.  Setup Lasberry Pi
+2.  Deploy โดยจะใช้ Lasberry Pi เป็น Server
