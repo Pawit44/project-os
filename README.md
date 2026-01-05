@@ -40,7 +40,7 @@
 ## 5. 🧩 Project Workflow
 > *แผนภาพแสดงการทำงานของระบบ (System Flow) หรือ Architecture*
 
-![Place Diagram Here](https://drive.google.com/file/d/1pjqo9deay7ofbBTvlpCJFNZMWAiHuBQB/view)
+![System Architecture](https://drive.google.com/file/d/1pjqo9deay7ofbBTvlpCJFNZMWAiHuBQB/view)
 
 ## 6. 🎥 Demo / Preview
 > *คลิปแสดงตัวอย่างการทำงานเบื้องต้น*
