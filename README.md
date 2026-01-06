@@ -60,5 +60,5 @@
 ## 8. 📅 Next Steps
 *(แผนการดำเนินงานในขั้นต่อไป)*
 
-1.  Setup Lasberry Pi
-2.  Deploy โดยจะใช้ Lasberry Pi เป็น Server
+1.  Setup Rasberry Pi
+2.  Deploy โดยจะใช้ Rasberry Pi เป็น Server
