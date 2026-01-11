@@ -5,112 +5,214 @@
 {% block content %}
 <div class="attacks-page">
     <div class="page-header">
-        <h2>&#9889; Attack Log</h2>
-        <div class="filters">
-            <select id="source-filter">
-                <option value="">All Sources</option>
-                <option value="WEB">Web</option>
-                <option value="SSH">SSH</option>
-            </select>
-            <select id="threat-filter">
-                <option value="">All Threats</option>
-                <option value="HIGH">High</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="LOW">Low</option>
-            </select>
-            <input type="text" id="ip-filter" placeholder="Filter by IP...">
-            <button onclick="loadAttacks()" class="btn-refresh">Refresh</button>
+        <div class="page-title">
+            <h2>&#9889; Attack Log</h2>
+            <p class="page-subtitle">Total: <span id="total-count">-</span> attacks</p>
+        </div>
+        <div class="page-actions">
+            <a href="/api/export/attacks" class="btn-export">&#128229; Export CSV</a>
         </div>
     </div>
 
-    <table class="attacks-table full">
-        <thead>
-            <tr>
-                <th>Timestamp</th>
-                <th>Source</th>
-                <th>IP Address</th>
-                <th>Country</th>
-                <th>Username</th>
-                <th>Password</th>
-                <th>Command</th>
-                <th>Score</th>
-                <th>Level</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody id="attacks-body">
-            <tr><td colspan="10">Loading...</td></tr>
-        </tbody>
-    </table>
+    <div class="filters-bar">
+        <select id="source-filter">
+            <option value="">All Sources</option>
+            <option value="WEB">Web</option>
+            <option value="SSH">SSH</option>
+        </select>
+        <select id="type-filter">
+            <option value="">All Types</option>
+            <option value="sql_injection">SQL Injection</option>
+            <option value="login">Login Attempt</option>
+            <option value="page_access">Page Access</option>
+            <option value="command">SSH Command</option>
+            <option value="scan">Scan</option>
+        </select>
+        <select id="threat-filter">
+            <option value="">All Threats</option>
+            <option value="HIGH">High</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="LOW">Low</option>
+        </select>
+        <input type="text" id="ip-filter" placeholder="Filter by IP...">
+        <button onclick="loadAttacks()" class="btn-refresh">Refresh</button>
+    </div>
+
+    <div class="table-container">
+        <table class="attacks-table full">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Source</th>
+                    <th>Type</th>
+                    <th>IP Address</th>
+                    <th>Country</th>
+                    <th>Username</th>
+                    <th>Password</th>
+                    <th>Command/Path</th>
+                    <th>Score</th>
+                    <th>Level</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="attacks-body">
+                <tr><td colspan="11">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
 
     <div class="pagination">
-        <button onclick="loadMore()" class="btn-load-more">Load More</button>
+        <span id="showing-info" class="showing-info"></span>
+        <button id="load-more-btn" onclick="loadMore()" class="btn-load-more" style="display: none;">Load More</button>
     </div>
 </div>
 
 <script>
     let currentOffset = 0;
     const pageSize = 50;
+    let totalAttacks = 0;
+    let allLoadedAttacks = [];
 
-    function loadAttacks(append = false) {
+    async function loadAttacks(append = false) {
         if (!append) {
             currentOffset = 0;
+            allLoadedAttacks = [];
         }
 
+        try {
+            const response = await fetch(`/api/attacks?limit=${pageSize}&offset=${currentOffset}`);
+            const data = await response.json();
+
+            totalAttacks = data.total;
+            document.getElementById('total-count').textContent = totalAttacks.toLocaleString();
+
+            const tbody = document.getElementById('attacks-body');
+
+            if (!append) {
+                tbody.innerHTML = '';
+            }
+
+            if (data.attacks.length === 0 && !append) {
+                tbody.innerHTML = '<tr><td colspan="10">No attacks recorded</td></tr>';
+                updatePagination(0, 0, false);
+                return;
+            }
+
+            // Add new attacks to our array
+            allLoadedAttacks = allLoadedAttacks.concat(data.attacks);
+
+            // Render with filters
+            renderAttacks();
+
+            // Update offset for next load
+            currentOffset += data.count;
+
+            // Update pagination info
+            updatePagination(allLoadedAttacks.length, totalAttacks, data.has_more);
+
+        } catch (error) {
+            console.error('Error loading attacks:', error);
+            document.getElementById('attacks-body').innerHTML =
+                '<tr><td colspan="10">Error loading data</td></tr>';
+        }
+    }
+
+    function renderAttacks() {
+        const tbody = document.getElementById('attacks-body');
         const source = document.getElementById('source-filter').value;
+        const typeFilter = document.getElementById('type-filter').value;
         const threat = document.getElementById('threat-filter').value;
-        const ip = document.getElementById('ip-filter').value;
+        const ip = document.getElementById('ip-filter').value.toLowerCase();
 
-        fetch(`/api/attacks?limit=${pageSize}&offset=${currentOffset}`)
-            .then(response => response.json())
-            .then(data => {
-                const tbody = document.getElementById('attacks-body');
+        // Filter attacks
+        const filtered = allLoadedAttacks.filter(attack => {
+            if (source && attack.source !== source) return false;
+            if (threat && attack.threat_level !== threat) return false;
+            if (ip && !attack.ip_address.toLowerCase().includes(ip)) return false;
 
-                if (!append) {
-                    tbody.innerHTML = '';
+            // Type filter - need to parse raw_data
+            if (typeFilter) {
+                let extraData = {};
+                if (attack.raw_data) {
+                    try { extraData = JSON.parse(attack.raw_data); } catch (e) {}
                 }
+                let attackType = extraData.type || (attack.command ? 'command' : 'login');
+                if (attackType !== typeFilter) return false;
+            }
 
-                if (data.attacks.length === 0 && !append) {
-                    tbody.innerHTML = '<tr><td colspan="10">No attacks recorded</td></tr>';
-                    return;
-                }
+            return true;
+        });
 
-                data.attacks.forEach(attack => {
-                    // Apply filters
-                    if (source && attack.source !== source) return;
-                    if (threat && attack.threat_level !== threat) return;
-                    if (ip && !attack.ip_address.includes(ip)) return;
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="11">No matching attacks</td></tr>';
+            return;
+        }
 
-                    const row = document.createElement('tr');
-                    row.className = `threat-${attack.threat_level.toLowerCase()}`;
+        tbody.innerHTML = filtered.map(attack => {
+            const time = new Date(attack.timestamp).toLocaleString();
+            const password = attack.password ? escapeHtml(attack.password) : '-';
+            const levelClass = attack.threat_level.toLowerCase();
 
-                    const time = new Date(attack.timestamp).toLocaleString();
-                    const password = attack.password ?
-                        attack.password.substring(0, 2) + '***' : '-';
-                    const command = attack.command ?
-                        (attack.command.length > 30 ? attack.command.substring(0, 30) + '...' : attack.command) : '-';
+            // Parse extra data
+            let extraData = {};
+            if (attack.raw_data) {
+                try {
+                    extraData = JSON.parse(attack.raw_data);
+                } catch (e) {}
+            }
 
-                    row.innerHTML = `
-                        <td>${time}</td>
-                        <td><span class="source-badge ${attack.source.toLowerCase()}">${attack.source}</span></td>
-                        <td class="ip-cell">${attack.ip_address}</td>
-                        <td>${attack.country || 'Unknown'}</td>
-                        <td>${attack.username || '-'}</td>
-                        <td>${password}</td>
-                        <td class="command-cell" title="${attack.command || ''}">${command}</td>
-                        <td>${attack.threat_score}</td>
-                        <td><span class="threat-badge ${attack.threat_level.toLowerCase()}">${attack.threat_level}</span></td>
-                        <td><button onclick="blockIP('${attack.ip_address}')" class="btn-block">Block</button></td>
-                    `;
+            // Determine type
+            let attackType = extraData.type || (attack.command ? 'command' : 'login');
+            let typeBadgeClass = 'type-default';
+            if (attackType === 'sql_injection') typeBadgeClass = 'type-sqli';
+            else if (attackType === 'login') typeBadgeClass = 'type-login';
+            else if (attackType === 'command') typeBadgeClass = 'type-command';
+            else if (attackType === 'page_access') typeBadgeClass = 'type-access';
+            else if (attackType === 'scan') typeBadgeClass = 'type-scan';
 
-                    tbody.appendChild(row);
-                });
+            // Command or Path
+            let cmdPath = '-';
+            if (attack.command) {
+                cmdPath = escapeHtml(attack.command.length > 30 ? attack.command.substring(0, 30) + '...' : attack.command);
+            } else if (extraData.path) {
+                cmdPath = `<span class="path-badge">${escapeHtml(extraData.path)}</span>`;
+            }
 
-                currentOffset += pageSize;
-            })
-            .catch(error => {
-                console.error('Error loading attacks:', error);
-            });
+            // SQLi pattern tooltip
+            let sqliInfo = '';
+            if (extraData.sqli_pattern) {
+                sqliInfo = ` title="Pattern: ${escapeHtml(extraData.sqli_pattern)}"`;
+            }
+
+            return `
+                <tr class="threat-${levelClass}"${sqliInfo}>
+                    <td>${time}</td>
+                    <td><span class="source-badge ${attack.source.toLowerCase()}">${attack.source}</span></td>
+                    <td><span class="type-badge ${typeBadgeClass}">${attackType}</span></td>
+                    <td class="ip-cell">${attack.ip_address}</td>
+                    <td>${attack.country || 'Unknown'}</td>
+                    <td>${escapeHtml(attack.username) || '-'}</td>
+                    <td class="password-cell-table">${password}</td>
+                    <td class="command-cell" title="${escapeHtml(attack.command || extraData.path || '')}">${cmdPath}</td>
+                    <td>${attack.threat_score}</td>
+                    <td><span class="threat-badge ${levelClass}">${attack.threat_level}</span></td>
+                    <td><button onclick="blockIP('${attack.ip_address}')" class="btn-block">Block</button></td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function updatePagination(loaded, total, hasMore) {
+        const showingInfo = document.getElementById('showing-info');
+        const loadMoreBtn = document.getElementById('load-more-btn');
+
+        showingInfo.textContent = `Showing ${loaded} of ${total} attacks`;
+
+        if (hasMore) {
+            loadMoreBtn.style.display = 'inline-block';
+        } else {
+            loadMoreBtn.style.display = 'none';
+        }
     }
 
     function loadMore() {
@@ -132,14 +234,15 @@
             });
     }
 
+    // Filter handlers - just re-render, don't reload
+    document.getElementById('source-filter').addEventListener('change', renderAttacks);
+    document.getElementById('type-filter').addEventListener('change', renderAttacks);
+    document.getElementById('threat-filter').addEventListener('change', renderAttacks);
+    document.getElementById('ip-filter').addEventListener('input', renderAttacks);
+
     // Initial load
     document.addEventListener('DOMContentLoaded', () => {
         loadAttacks();
     });
-
-    // Filter change handlers
-    document.getElementById('source-filter').addEventListener('change', () => loadAttacks());
-    document.getElementById('threat-filter').addEventListener('change', () => loadAttacks());
-    document.getElementById('ip-filter').addEventListener('input', () => loadAttacks());
 </script>
 {% endblock %}

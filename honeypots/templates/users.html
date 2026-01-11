@@ -1,0 +1,104 @@
+{% extends "base_admin.html" %}
+
+{% block title %}User Management - Router Admin{% endblock %}
+{% block page_title %}User Management{% endblock %}
+
+{% block content %}
+<div class="alert alert-info">
+    <strong>Info:</strong> Manage system users and their access permissions. Changes require admin privileges.
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>System Users</h3>
+        <button class="btn btn-success" onclick="alert('Feature temporarily disabled for security audit.')">+ Add User</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Password Hash</th>
+                <th>Last Login</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td><strong>{{ user.username }}</strong></td>
+                <td>{{ user.email }}</td>
+                <td>
+                    <span class="status-badge {{ 'online' if user.role == 'Administrator' else 'warning' }}">
+                        {{ user.role }}
+                    </span>
+                </td>
+                <td><code class="password-field">{{ user.password_hash }}</code></td>
+                <td>{{ user.last_login or 'Never' }}</td>
+                <td>
+                    <button class="btn btn-primary" onclick="alert('Edit user: {{ user.username }}')">Edit</button>
+                    <button class="btn btn-danger" onclick="alert('Cannot delete system user.')">Delete</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Access Permissions</h3>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Permission</th>
+                <th>Administrator</th>
+                <th>Operator</th>
+                <th>Guest</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>View Dashboard</td>
+                <td><span class="status-badge online">Yes</span></td>
+                <td><span class="status-badge online">Yes</span></td>
+                <td><span class="status-badge online">Yes</span></td>
+            </tr>
+            <tr>
+                <td>Manage Users</td>
+                <td><span class="status-badge online">Yes</span></td>
+                <td><span class="status-badge offline">No</span></td>
+                <td><span class="status-badge offline">No</span></td>
+            </tr>
+            <tr>
+                <td>Network Settings</td>
+                <td><span class="status-badge online">Yes</span></td>
+                <td><span class="status-badge online">Yes</span></td>
+                <td><span class="status-badge offline">No</span></td>
+            </tr>
+            <tr>
+                <td>System Settings</td>
+                <td><span class="status-badge online">Yes</span></td>
+                <td><span class="status-badge offline">No</span></td>
+                <td><span class="status-badge offline">No</span></td>
+            </tr>
+            <tr>
+                <td>Backup & Restore</td>
+                <td><span class="status-badge online">Yes</span></td>
+                <td><span class="status-badge offline">No</span></td>
+                <td><span class="status-badge offline">No</span></td>
+            </tr>
+            <tr>
+                <td>View Credentials</td>
+                <td><span class="status-badge online">Yes</span></td>
+                <td><span class="status-badge offline">No</span></td>
+                <td><span class="status-badge offline">No</span></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}

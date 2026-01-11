@@ -1,0 +1,186 @@
+{% extends "base_admin.html" %}
+
+{% block title %}System Logs - Router Admin{% endblock %}
+{% block page_title %}System Logs{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon blue">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+        </div>
+        <div class="stat-value">{{ logs|length }}</div>
+        <div class="stat-label">Total Entries</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        </div>
+        <div class="stat-value">{{ logs|selectattr('level', 'equalto', 'INFO')|list|length }}</div>
+        <div class="stat-label">Info</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon orange">
+            <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+        </div>
+        <div class="stat-value">{{ logs|selectattr('level', 'equalto', 'WARNING')|list|length }}</div>
+        <div class="stat-label">Warnings</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon red">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
+        </div>
+        <div class="stat-value">{{ logs|selectattr('level', 'equalto', 'ERROR')|list|length }}</div>
+        <div class="stat-label">Errors</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Log Filters</h3>
+    </div>
+    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <select style="padding: 8px 15px; border: 1px solid #ddd; border-radius: 4px;">
+            <option value="all">All Levels</option>
+            <option value="info">INFO</option>
+            <option value="warning">WARNING</option>
+            <option value="error">ERROR</option>
+        </select>
+        <select style="padding: 8px 15px; border: 1px solid #ddd; border-radius: 4px;">
+            <option value="all">All Sources</option>
+            <option value="system">System</option>
+            <option value="network">Network</option>
+            <option value="security">Security</option>
+            <option value="dhcp">DHCP</option>
+        </select>
+        <input type="date" value="2024-01-15" style="padding: 8px 15px; border: 1px solid #ddd; border-radius: 4px;">
+        <button class="btn btn-primary" onclick="alert('Filter applied')">Apply Filter</button>
+        <button class="btn btn-success" onclick="alert('Exporting logs... Export requires premium license.')">Export Logs</button>
+        <button class="btn btn-danger" onclick="alert('Cannot clear logs: Permission denied')">Clear Logs</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>System Log Entries</h3>
+        <span class="status-badge online">Live Updates Enabled</span>
+    </div>
+
+    {% for log in logs %}
+    <div class="log-entry {{ log.level }}">
+        <span class="timestamp">{{ log.timestamp }}</span>
+        <span class="level">[{{ log.level }}]</span>
+        <span class="message">{{ log.message }}</span>
+    </div>
+    {% endfor %}
+
+    <!-- Additional fake log entries -->
+    <div class="log-entry INFO">
+        <span class="timestamp">2024-01-15 08:30:15</span>
+        <span class="level">[INFO]</span>
+        <span class="message">SSH session opened for user admin from 192.168.1.105</span>
+    </div>
+    <div class="log-entry WARNING">
+        <span class="timestamp">2024-01-15 08:28:42</span>
+        <span class="level">[WARNING]</span>
+        <span class="message">Multiple failed SSH attempts from 45.33.32.156 (5 attempts)</span>
+    </div>
+    <div class="log-entry INFO">
+        <span class="timestamp">2024-01-15 08:25:00</span>
+        <span class="level">[INFO]</span>
+        <span class="message">DHCP lease renewed for device DESKTOP-PC7 (192.168.1.120)</span>
+    </div>
+    <div class="log-entry ERROR">
+        <span class="timestamp">2024-01-15 08:22:17</span>
+        <span class="level">[ERROR]</span>
+        <span class="message">DNS resolution failed for update.microsoft.com - timeout</span>
+    </div>
+    <div class="log-entry INFO">
+        <span class="timestamp">2024-01-15 08:20:00</span>
+        <span class="level">[INFO]</span>
+        <span class="message">Firewall rule updated: Allow port 443 outbound</span>
+    </div>
+    <div class="log-entry WARNING">
+        <span class="timestamp">2024-01-15 08:15:33</span>
+        <span class="level">[WARNING]</span>
+        <span class="message">High bandwidth usage detected on port 4 (Smart-TV-Living)</span>
+    </div>
+    <div class="log-entry INFO">
+        <span class="timestamp">2024-01-15 08:10:05</span>
+        <span class="level">[INFO]</span>
+        <span class="message">VPN tunnel established to vpn.company.com (10.0.0.1)</span>
+    </div>
+    <div class="log-entry INFO">
+        <span class="timestamp">2024-01-15 08:05:00</span>
+        <span class="level">[INFO]</span>
+        <span class="message">System backup completed successfully</span>
+    </div>
+    <div class="log-entry WARNING">
+        <span class="timestamp">2024-01-15 08:00:12</span>
+        <span class="level">[WARNING]</span>
+        <span class="message">Certificate for cloud.router.local expires in 30 days</span>
+    </div>
+    <div class="log-entry INFO">
+        <span class="timestamp">2024-01-15 07:55:00</span>
+        <span class="level">[INFO]</span>
+        <span class="message">NTP sync completed with time.google.com</span>
+    </div>
+    <div class="log-entry ERROR">
+        <span class="timestamp">2024-01-15 07:45:28</span>
+        <span class="level">[ERROR]</span>
+        <span class="message">Port scan detected from external IP 185.220.101.45</span>
+    </div>
+    <div class="log-entry INFO">
+        <span class="timestamp">2024-01-15 07:30:00</span>
+        <span class="level">[INFO]</span>
+        <span class="message">Scheduled maintenance window started</span>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Security Events</h3>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Event Type</th>
+                <th>Source IP</th>
+                <th>Details</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>2024-01-15 08:28:42</td>
+                <td><span class="status-badge warning">Brute Force</span></td>
+                <td><code>45.33.32.156</code></td>
+                <td>5 failed SSH login attempts</td>
+                <td><button class="btn btn-danger" onclick="alert('IP blocked: 45.33.32.156')">Block IP</button></td>
+            </tr>
+            <tr>
+                <td>2024-01-15 07:45:28</td>
+                <td><span class="status-badge offline">Port Scan</span></td>
+                <td><code>185.220.101.45</code></td>
+                <td>Scanned ports 22, 80, 443, 8080</td>
+                <td><button class="btn btn-danger" onclick="alert('IP blocked: 185.220.101.45')">Block IP</button></td>
+            </tr>
+            <tr>
+                <td>2024-01-15 06:12:05</td>
+                <td><span class="status-badge warning">SQL Injection</span></td>
+                <td><code>103.152.220.44</code></td>
+                <td>Attempted SQL injection on login page</td>
+                <td><button class="btn btn-danger" onclick="alert('IP blocked: 103.152.220.44')">Block IP</button></td>
+            </tr>
+            <tr>
+                <td>2024-01-15 04:33:19</td>
+                <td><span class="status-badge offline">XSS Attempt</span></td>
+                <td><code>91.134.203.77</code></td>
+                <td>Cross-site scripting payload detected</td>
+                <td><button class="btn btn-danger" onclick="alert('IP blocked: 91.134.203.77')">Block IP</button></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}

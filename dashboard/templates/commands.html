@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}SSH Commands - Honeypot Security{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <div class="page-title">
+            <h2>&#128187; SSH Commands</h2>
+            <p class="page-subtitle">Commands executed by attackers via SSH honeypot</p>
+        </div>
+        <div class="page-actions">
+            <a href="/api/export/commands" class="btn-export">&#128229; Export CSV</a>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon attack">&#128187;</div>
+            <div class="stat-info">
+                <span class="stat-value" id="total-commands">-</span>
+                <span class="stat-label">Total Commands</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon ip">&#127760;</div>
+            <div class="stat-info">
+                <span class="stat-value" id="unique-commands">-</span>
+                <span class="stat-label">Unique Commands</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-grid">
+        <div class="main-content-area">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Recent Commands</h3>
+                    <div class="filters">
+                        <input type="text" id="command-filter" placeholder="Filter commands..." onkeyup="filterCommands()">
+                        <button onclick="loadCommands()" class="btn-refresh">Refresh</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="attacks-table full">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>IP Address</th>
+                                <th>Country</th>
+                                <th>Command</th>
+                                <th>Threat</th>
+                            </tr>
+                        </thead>
+                        <tbody id="commands-body">
+                            <tr><td colspan="5">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <span id="showing-info" class="showing-info"></span>
+                    <button id="load-more-btn" onclick="loadMore()" class="btn-load-more" style="display: none;">Load More</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3>&#128293; Top Commands</h3>
+                </div>
+                <ul id="top-commands" class="top-list">
+                    <li>Loading...</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>&#9888; Command Categories</h3>
+                </div>
+                <div class="category-list" id="command-categories">
+                    <div class="category-item">
+                        <span class="category-name">Reconnaissance</span>
+                        <span class="category-keywords">whoami, uname, cat /etc/passwd</span>
+                    </div>
+                    <div class="category-item">
+                        <span class="category-name">Download/Install</span>
+                        <span class="category-keywords">wget, curl, apt-get</span>
+                    </div>
+                    <div class="category-item">
+                        <span class="category-name">Persistence</span>
+                        <span class="category-keywords">crontab, chmod, chown</span>
+                    </div>
+                    <div class="category-item">
+                        <span class="category-name">Network</span>
+                        <span class="category-keywords">netstat, ifconfig, ping</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentOffset = 0;
+    const pageSize = 50;
+    let allCommands = [];
+    let totalCommands = 0;
+
+    async function loadCommands(append = false) {
+        if (!append) {
+            currentOffset = 0;
+            allCommands = [];
+        }
+
+        try {
+            const response = await fetch(`/api/commands?limit=${pageSize}&offset=${currentOffset}`);
+            const data = await response.json();
+
+            totalCommands = data.total;
+
+            // Update stats
+            document.getElementById('total-commands').textContent = data.total.toLocaleString();
+            document.getElementById('unique-commands').textContent = data.top_commands.length.toLocaleString();
+
+            // Update table
+            const tbody = document.getElementById('commands-body');
+
+            if (!append) {
+                tbody.innerHTML = '';
+            }
+
+            if (data.commands.length === 0 && !append) {
+                tbody.innerHTML = '<tr><td colspan="5">No commands recorded</td></tr>';
+                updatePagination(0, 0, false);
+                return;
+            }
+
+            allCommands = allCommands.concat(data.commands);
+            renderCommands(allCommands);
+
+            // Update top commands
+            const topList = document.getElementById('top-commands');
+            topList.innerHTML = data.top_commands.slice(0, 15).map(c =>
+                `<li>
+                    <span class="item-name command-text" title="${escapeHtml(c.command)}">${escapeHtml(truncate(c.command, 40))}</span>
+                    <span class="item-count">${c.count}</span>
+                </li>`
+            ).join('') || '<li>No data</li>';
+
+            currentOffset += data.commands.length;
+
+            // Update pagination
+            const hasMore = currentOffset < totalCommands;
+            updatePagination(allCommands.length, totalCommands, hasMore);
+
+        } catch (error) {
+            console.error('Error loading commands:', error);
+        }
+    }
+
+    function updatePagination(loaded, total, hasMore) {
+        const showingInfo = document.getElementById('showing-info');
+        const loadMoreBtn = document.getElementById('load-more-btn');
+
+        showingInfo.textContent = `Showing ${loaded} of ${total} commands`;
+
+        if (hasMore) {
+            loadMoreBtn.style.display = 'inline-block';
+        } else {
+            loadMoreBtn.style.display = 'none';
+        }
+    }
+
+    function renderCommands(commands) {
+        const tbody = document.getElementById('commands-body');
+        const filter = document.getElementById('command-filter').value.toLowerCase();
+
+        const filtered = filter
+            ? commands.filter(c => c.command.toLowerCase().includes(filter))
+            : commands;
+
+        tbody.innerHTML = filtered.map(cmd => {
+            const time = new Date(cmd.timestamp).toLocaleString();
+            const levelClass = cmd.threat_level.toLowerCase();
+
+            return `
+                <tr class="threat-${levelClass}">
+                    <td>${time}</td>
+                    <td class="ip-cell">${cmd.ip_address}</td>
+                    <td>${cmd.country || 'Unknown'}</td>
+                    <td class="command-cell-full" title="${escapeHtml(cmd.command)}">
+                        <code>${escapeHtml(cmd.command)}</code>
+                    </td>
+                    <td><span class="threat-badge ${levelClass}">${cmd.threat_level}</span></td>
+                </tr>
+            `;
+        }).join('');
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5">No matching commands</td></tr>';
+        }
+    }
+
+    function filterCommands() {
+        renderCommands(allCommands);
+    }
+
+    function loadMore() {
+        loadCommands(true);
+    }
+
+    function truncate(str, len) {
+        return str.length > len ? str.substring(0, len) + '...' : str;
+    }
+
+    // Initial load
+    document.addEventListener('DOMContentLoaded', () => {
+        loadCommands();
+    });
+</script>
+{% endblock %}

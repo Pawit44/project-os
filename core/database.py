@@ -250,13 +250,19 @@ class Database:
                 cur.execute('DELETE FROM blocked_ips WHERE expires_at < CURRENT_TIMESTAMP')
                 return cur.rowcount
 
-    def get_recent_attacks(self, limit: int = 100) -> List[Dict[str, Any]]:
-        """Get recent attack events"""
+    def get_recent_attacks(self, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+        """Get recent attack events with pagination"""
         with self.cursor() as cur:
             cur.execute('''
-                SELECT * FROM attacks ORDER BY timestamp DESC LIMIT ?
-            ''', (limit,))
+                SELECT * FROM attacks ORDER BY timestamp DESC LIMIT ? OFFSET ?
+            ''', (limit, offset))
             return [dict(row) for row in cur.fetchall()]
+
+    def get_total_attacks_count(self) -> int:
+        """Get total number of attacks"""
+        with self.cursor() as cur:
+            cur.execute('SELECT COUNT(*) FROM attacks')
+            return cur.fetchone()[0]
 
     def get_attacks_by_ip(self, ip_address: str, limit: int = 50) -> List[Dict[str, Any]]:
         """Get attacks from a specific IP"""

@@ -2,9 +2,6 @@ version: '3.8'
 
 services:
   honeypot:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: sudyosh/honeypot-security
     container_name: honeypot-security
     restart: unless-stopped
@@ -25,12 +22,10 @@ services:
     volumes:
       # Persist configuration
       - ./config/config.yaml:/app/config/config.yaml:ro
-      # Persist data (database, SSH key)
-      - honeypot-data:/app/data
+      # Persist data (database, SSH key, GeoIP)
+      - ./data:/app/data
       # Persist logs
-      - honeypot-logs:/app/logs
-      # GeoIP database (optional)
-      - ./data/GeoLite2-City.mmdb:/app/data/GeoLite2-City.mmdb:ro
+      - ./logs:/app/logs
 
     environment:
       - PYTHONUNBUFFERED=1
@@ -51,12 +46,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-volumes:
-  honeypot-data:
-    name: honeypot-data
-  honeypot-logs:
-    name: honeypot-logs
 
 networks:
   honeypot-net:
