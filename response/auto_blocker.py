@@ -1,6 +1,8 @@
 """
-Auto Blocker - Automated IP blocking using iptables
+IP Blocker - Manual IP blocking using iptables
 SOAR (Security Orchestration, Automation and Response) component
+
+Note: Auto-block has been disabled. Only manual blocking via dashboard is available.
 """
 
 import os
@@ -17,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 class AutoBlocker:
-    """Automated IP blocking system"""
+    """IP blocking system - Manual only (auto-block disabled)"""
 
     def __init__(self):
         from core.config import Config
@@ -29,7 +31,8 @@ class AutoBlocker:
         # Get configuration
         response_config = self.config.get_response_config()
 
-        self.enabled = response_config.get('auto_block', False)
+        # Auto-block is always disabled - only manual blocking allowed
+        self.enabled = False  # Disabled auto-block
         self.block_threshold = response_config.get('block_threshold', 'HIGH')
         self.block_duration = response_config.get('block_duration', 3600)
         self.use_iptables = response_config.get('use_iptables', True)
@@ -42,15 +45,11 @@ class AutoBlocker:
         self.is_linux = platform.system() == 'Linux'
         self.is_root = os.geteuid() == 0 if self.is_linux else False
 
-        if self.enabled:
-            if not self.is_linux:
-                print("[AutoBlocker] Warning: iptables only available on Linux")
-                print("[AutoBlocker] IP blocking will be logged but not enforced")
-            elif not self.is_root:
-                print("[AutoBlocker] Warning: Root privileges required for iptables")
-                print("[AutoBlocker] IP blocking will be logged but not enforced")
-            else:
-                print(f"[AutoBlocker] Enabled (threshold: {self.block_threshold})")
+        print("[IPBlocker] Manual blocking mode (auto-block disabled)")
+        if not self.is_linux:
+            print("[IPBlocker] Warning: iptables only available on Linux")
+        elif not self.is_root:
+            print("[IPBlocker] Warning: Root privileges required for iptables")
 
     def start_cleanup_thread(self) -> None:
         """Start background thread to cleanup expired blocks"""
@@ -93,7 +92,7 @@ class AutoBlocker:
 
     def block_ip(self, ip_address: str, reason: str, threat_level: str) -> Tuple[bool, str]:
         """
-        Block an IP address
+        Block an IP address (manual blocking)
 
         Args:
             ip_address: IP to block
@@ -103,9 +102,6 @@ class AutoBlocker:
         Returns:
             Tuple of (success, message)
         """
-        if not self.enabled:
-            return False, "Auto-block is disabled"
-
         # Check if already blocked
         if self.db.is_blocked(ip_address):
             return False, f"{ip_address} is already blocked"
@@ -130,7 +126,7 @@ class AutoBlocker:
             else:
                 message = f"Logged block for {ip_address} (iptables not available)"
 
-            print(f"[AutoBlocker] {message}")
+            print(f"[IPBlocker] {message}")
             return True, message
 
     def unblock_ip(self, ip_address: str) -> Tuple[bool, str]:
@@ -152,7 +148,7 @@ class AutoBlocker:
             self._iptables_unblock(ip_address)
 
             message = f"Unblocked {ip_address}"
-            print(f"[AutoBlocker] {message}")
+            print(f"[IPBlocker] {message}")
             return True, message
 
     def _iptables_block(self, ip_address: str) -> bool:
@@ -211,7 +207,9 @@ class AutoBlocker:
 
     def check_and_block(self, ip_address: str, threat_score: int, threat_level: str) -> bool:
         """
-        Check if IP should be blocked and block if necessary
+        Auto-block check - DISABLED
+
+        Auto-blocking has been disabled. Use manual blocking via dashboard instead.
 
         Args:
             ip_address: IP to check
@@ -219,25 +217,9 @@ class AutoBlocker:
             threat_level: Current threat level
 
         Returns:
-            Boolean indicating if IP was blocked
+            Always returns False (auto-block disabled)
         """
-        if not self.enabled:
-            return False
-
-        # Check if already blocked
-        if self.db.is_blocked(ip_address):
-            return False
-
-        # Check against threshold
-        from analysis.threat_scorer import ThreatScorer
-        scorer = ThreatScorer()
-
-        should_block, reason = scorer.should_block(ip_address, threat_score)
-
-        if should_block:
-            success, _ = self.block_ip(ip_address, reason, threat_level)
-            return success
-
+        # Auto-block is disabled - only manual blocking via dashboard
         return False
 
     def get_blocked_ips(self) -> List[Dict]:

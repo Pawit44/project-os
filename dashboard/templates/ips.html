@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}IP Analysis - Honeypot Security{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <div class="page-title">
+            <h2>&#127760; IP Address Analysis</h2>
+            <p class="page-subtitle">Analyze attacker IP addresses and their activities</p>
+        </div>
+        <div class="page-actions">
+            <a href="/api/export/ips" class="btn-export">&#128229; Export CSV</a>
+        </div>
+    </div>
+
+    <!-- Blocked IPs Section -->
+    <div class="card highlight-card-blocked">
+        <div class="card-header">
+            <h3>&#128683; Currently Blocked IPs</h3>
+            <span id="blocked-count" class="badge-danger">0 blocked</span>
+        </div>
+        <div class="blocked-grid" id="blocked-ips-grid">
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <div class="content-grid">
+        <div class="main-content-area wide">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Top Attackers</h3>
+                    <div class="filters">
+                        <input type="text" id="ip-filter" placeholder="Filter by IP..." onkeyup="filterIPs()">
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="attacks-table full">
+                        <thead>
+                            <tr>
+                                <th>IP Address</th>
+                                <th>Country</th>
+                                <th>Attacks</th>
+                                <th>Score</th>
+                                <th>Max Threat</th>
+                                <th>Unique Users</th>
+                                <th>Unique Cmds</th>
+                                <th>First Seen</th>
+                                <th>Last Seen</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ips-body">
+                            <tr><td colspan="10">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-content narrow">
+            <div class="card">
+                <div class="card-header">
+                    <h3>&#128187; IPs with Commands</h3>
+                </div>
+                <ul id="ips-with-commands" class="top-list">
+                    <li>Loading...</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>&#128202; Quick Stats</h3>
+                </div>
+                <div class="quick-stats">
+                    <div class="quick-stat">
+                        <span class="quick-stat-value" id="total-ips">-</span>
+                        <span class="quick-stat-label">Total IPs</span>
+                    </div>
+                    <div class="quick-stat">
+                        <span class="quick-stat-value" id="high-threat-ips">-</span>
+                        <span class="quick-stat-label">High Threat IPs</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- IP Details Modal -->
+<div id="ip-modal" class="modal" style="display: none;">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h3>IP Details: <span id="modal-ip"></span></h3>
+            <button class="modal-close" onclick="closeIPModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="ip-details">
+            <!-- Details will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<script>
+    let allIPs = [];
+
+    async function loadIPs() {
+        try {
+            const response = await fetch('/api/ips');
+            const data = await response.json();
+
+            allIPs = data.top_attackers;
+
+            // Update stats
+            document.getElementById('total-ips').textContent = allIPs.length.toLocaleString();
+            document.getElementById('high-threat-ips').textContent =
+                allIPs.filter(ip => ip.max_threat === 'HIGH').length.toLocaleString();
+
+            // Render IPs table
+            renderIPs(allIPs);
+
+            // Render blocked IPs
+            const blockedGrid = document.getElementById('blocked-ips-grid');
+            const blockedCount = document.getElementById('blocked-count');
+
+            if (data.blocked_ips.length === 0) {
+                blockedGrid.innerHTML = '<p class="no-data">No IPs currently blocked</p>';
+                blockedCount.textContent = '0 blocked';
+            } else {
+                blockedCount.textContent = `${data.blocked_ips.length} blocked`;
+                blockedGrid.innerHTML = data.blocked_ips.map(ip => {
+                    const expiresAt = new Date(ip.expires_at).toLocaleString();
+                    return `
+                        <div class="blocked-ip-card">
+                            <div class="blocked-ip-address">${ip.ip_address}</div>
+                            <div class="blocked-ip-reason">${ip.reason}</div>
+                            <div class="blocked-ip-expires">Expires: ${expiresAt}</div>
+                            <button class="btn-unblock" onclick="unblockIP('${ip.ip_address}')">Unblock</button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Render IPs with commands
+            const cmdList = document.getElementById('ips-with-commands');
+            cmdList.innerHTML = data.ips_with_commands.map(ip =>
+                `<li>
+                    <span class="item-name ip-link" onclick="showIPDetails('${ip.ip_address}')">${ip.ip_address}</span>
+                    <span class="item-count">${ip.cmd_count} cmds</span>
+                </li>`
+            ).join('') || '<li>No data</li>';
+
+        } catch (error) {
+            console.error('Error loading IPs:', error);
+        }
+    }
+
+    function renderIPs(ips) {
+        const tbody = document.getElementById('ips-body');
+        const filter = document.getElementById('ip-filter').value.toLowerCase();
+
+        const filtered = filter
+            ? ips.filter(ip => ip.ip_address.includes(filter) || (ip.country && ip.country.toLowerCase().includes(filter)))
+            : ips;
+
+        tbody.innerHTML = filtered.map(ip => {
+            const threatClass = ip.max_threat ? ip.max_threat.toLowerCase() : 'low';
+            const firstSeen = ip.first_seen ? new Date(ip.first_seen).toLocaleDateString() : '-';
+            const lastSeen = ip.last_seen ? new Date(ip.last_seen).toLocaleDateString() : '-';
+
+            return `
+                <tr class="threat-${threatClass}">
+                    <td class="ip-cell ip-link" onclick="showIPDetails('${ip.ip_address}')">${ip.ip_address}</td>
+                    <td>${ip.country || 'Unknown'}</td>
+                    <td><span class="count-badge">${ip.attack_count}</span></td>
+                    <td>${ip.total_score || 0}</td>
+                    <td><span class="threat-badge ${threatClass}">${ip.max_threat || 'LOW'}</span></td>
+                    <td>${ip.unique_usernames || 0}</td>
+                    <td>${ip.unique_commands || 0}</td>
+                    <td>${firstSeen}</td>
+                    <td>${lastSeen}</td>
+                    <td>
+                        <button class="btn-block" onclick="blockIP('${ip.ip_address}')">Block</button>
+                        <button class="btn-details" onclick="showIPDetails('${ip.ip_address}')">Details</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10">No matching IPs</td></tr>';
+        }
+    }
+
+    function filterIPs() {
+        renderIPs(allIPs);
+    }
+
+    async function showIPDetails(ip) {
+        document.getElementById('modal-ip').textContent = ip;
+        document.getElementById('ip-details').innerHTML = '<p>Loading...</p>';
+        document.getElementById('ip-modal').style.display = 'flex';
+
+        try {
+            const response = await fetch(`/api/attacks/${ip}`);
+            const data = await response.json();
+
+            let html = `
+                <div class="ip-stats-grid">
+                    <div class="ip-stat">
+                        <span class="ip-stat-value">${data.stats?.total_attempts || 0}</span>
+                        <span class="ip-stat-label">Total Attempts</span>
+                    </div>
+                    <div class="ip-stat">
+                        <span class="ip-stat-value">${data.stats?.total_score || 0}</span>
+                        <span class="ip-stat-label">Total Score</span>
+                    </div>
+                    <div class="ip-stat">
+                        <span class="ip-stat-value">${data.stats?.country || 'Unknown'}</span>
+                        <span class="ip-stat-label">Country</span>
+                    </div>
+                </div>
+
+                <h4>Recent Activity</h4>
+                <table class="attacks-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Source</th>
+                            <th>Username</th>
+                            <th>Command</th>
+                            <th>Threat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            data.attacks.forEach(attack => {
+                const time = new Date(attack.timestamp).toLocaleString();
+                const levelClass = attack.threat_level.toLowerCase();
+                html += `
+                    <tr class="threat-${levelClass}">
+                        <td>${time}</td>
+                        <td><span class="source-badge ${attack.source.toLowerCase()}">${attack.source}</span></td>
+                        <td>${attack.username || '-'}</td>
+                        <td class="command-cell">${escapeHtml(attack.command || '-')}</td>
+                        <td><span class="threat-badge ${levelClass}">${attack.threat_level}</span></td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('ip-details').innerHTML = html;
+
+        } catch (error) {
+            document.getElementById('ip-details').innerHTML = '<p class="error">Error loading IP details</p>';
+            console.error('Error:', error);
+        }
+    }
+
+    function closeIPModal() {
+        document.getElementById('ip-modal').style.display = 'none';
+    }
+
+    async function blockIP(ip) {
+        if (!confirm(`Block IP ${ip}?`)) return;
+
+        try {
+            const response = await fetch(`/api/block/${ip}`, { method: 'POST' });
+            const data = await response.json();
+            alert(data.message);
+            loadIPs();
+        } catch (error) {
+            alert('Error blocking IP');
+            console.error(error);
+        }
+    }
+
+    async function unblockIP(ip) {
+        if (!confirm(`Unblock IP ${ip}?`)) return;
+
+        try {
+            const response = await fetch(`/api/unblock/${ip}`, { method: 'POST' });
+            const data = await response.json();
+            alert(data.message);
+            loadIPs();
+        } catch (error) {
+            alert('Error unblocking IP');
+            console.error(error);
+        }
+    }
+
+    // Close modal on outside click
+    document.getElementById('ip-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeIPModal();
+        }
+    });
+
+    // Initial load
+    document.addEventListener('DOMContentLoaded', () => {
+        loadIPs();
+    });
+</script>
+{% endblock %}

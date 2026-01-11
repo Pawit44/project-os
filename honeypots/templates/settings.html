@@ -1,0 +1,138 @@
+{% extends "base_admin.html" %}
+
+{% block title %}System Settings - Router Admin{% endblock %}
+{% block page_title %}System Settings{% endblock %}
+
+{% block content %}
+<div class="alert alert-warning">
+    <strong>Warning:</strong> Changes to system settings may affect network connectivity. Proceed with caution.
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Saved Credentials</h3>
+        <button class="btn btn-success" onclick="alert('Add credential feature disabled during security audit.')">+ Add Credential</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Service</th>
+                <th>Host/IP</th>
+                <th>Username</th>
+                <th>Password</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cred in credentials %}
+            <tr>
+                <td><strong>{{ cred.service }}</strong></td>
+                <td><code>{{ cred.host }}</code></td>
+                <td><code>{{ cred.username }}</code></td>
+                <td><code class="password-field">{{ cred.password }}</code></td>
+                <td>
+                    <button class="btn btn-primary" onclick="alert('Testing connection to {{ cred.host }}...\nConnection successful!')">Test</button>
+                    <button class="btn btn-danger" onclick="alert('Cannot delete: {{ cred.service }}')">Delete</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Router Configuration</h3>
+    </div>
+    <form onsubmit="alert('Settings saved successfully!'); return false;">
+        <table>
+            <tr>
+                <td style="width: 200px;"><strong>Router Name</strong></td>
+                <td><input type="text" value="NETGEAR-R7000" style="padding: 8px; width: 300px; border: 1px solid #ddd; border-radius: 4px;"></td>
+            </tr>
+            <tr>
+                <td><strong>Admin Username</strong></td>
+                <td><input type="text" value="admin" style="padding: 8px; width: 300px; border: 1px solid #ddd; border-radius: 4px;"></td>
+            </tr>
+            <tr>
+                <td><strong>Admin Password</strong></td>
+                <td><input type="password" value="Admin@Router2024!" style="padding: 8px; width: 300px; border: 1px solid #ddd; border-radius: 4px;"></td>
+            </tr>
+            <tr>
+                <td><strong>Enable SSH</strong></td>
+                <td><input type="checkbox" checked> Port: <input type="text" value="22" style="padding: 8px; width: 60px; border: 1px solid #ddd; border-radius: 4px;"></td>
+            </tr>
+            <tr>
+                <td><strong>Enable Telnet</strong></td>
+                <td><input type="checkbox"> Port: <input type="text" value="23" style="padding: 8px; width: 60px; border: 1px solid #ddd; border-radius: 4px;"></td>
+            </tr>
+            <tr>
+                <td><strong>Remote Management</strong></td>
+                <td><input type="checkbox" checked> Allow from WAN</td>
+            </tr>
+        </table>
+        <div style="margin-top: 20px;">
+            <button type="submit" class="btn btn-success">Save Settings</button>
+            <button type="button" class="btn btn-warning" onclick="alert('Settings restored to factory defaults.')">Factory Reset</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>WiFi Configuration</h3>
+    </div>
+    <table>
+        <tr>
+            <td style="width: 200px;"><strong>2.4GHz SSID</strong></td>
+            <td><input type="text" value="NETGEAR-Home" style="padding: 8px; width: 300px; border: 1px solid #ddd; border-radius: 4px;"></td>
+        </tr>
+        <tr>
+            <td><strong>2.4GHz Password</strong></td>
+            <td><input type="text" value="WiFi_P@ssw0rd_2024" style="padding: 8px; width: 300px; border: 1px solid #ddd; border-radius: 4px;"></td>
+        </tr>
+        <tr>
+            <td><strong>5GHz SSID</strong></td>
+            <td><input type="text" value="NETGEAR-Home-5G" style="padding: 8px; width: 300px; border: 1px solid #ddd; border-radius: 4px;"></td>
+        </tr>
+        <tr>
+            <td><strong>5GHz Password</strong></td>
+            <td><input type="text" value="WiFi_5G_Secure#2024" style="padding: 8px; width: 300px; border: 1px solid #ddd; border-radius: 4px;"></td>
+        </tr>
+        <tr>
+            <td><strong>Security Mode</strong></td>
+            <td>
+                <select style="padding: 8px; width: 300px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option>WPA2-PSK</option>
+                    <option selected>WPA3-Personal</option>
+                    <option>WPA2/WPA3 Mixed</option>
+                </select>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>API Keys & Tokens</h3>
+    </div>
+    <table>
+        <tr>
+            <td style="width: 200px;"><strong>DDNS API Key</strong></td>
+            <td><code class="password-field">sk_live_4eC39HqLyjWDarjtT1zdp7dc</code></td>
+        </tr>
+        <tr>
+            <td><strong>Cloud Backup Token</strong></td>
+            <td><code class="password-field">ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</code></td>
+        </tr>
+        <tr>
+            <td><strong>VPN Secret Key</strong></td>
+            <td><code class="password-field">vpn_secret_K9x2mP4qR7tY1wZ3</code></td>
+        </tr>
+        <tr>
+            <td><strong>SNMP Community</strong></td>
+            <td><code class="password-field">public</code></td>
+        </tr>
+    </table>
+</div>
+{% endblock %}

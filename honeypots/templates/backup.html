@@ -1,0 +1,184 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Backup & Restore - Router Admin{% endblock %}
+{% block page_title %}Backup & Restore{% endblock %}
+
+{% block content %}
+<div class="alert alert-info">
+    <strong>Info:</strong> Regular backups help protect your configuration. We recommend backing up before any major changes.
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon blue">
+            <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+        </div>
+        <div class="stat-value">{{ backups|length }}</div>
+        <div class="stat-label">Total Backups</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        </div>
+        <div class="stat-value">OK</div>
+        <div class="stat-label">Last Backup Status</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon orange">
+            <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+        </div>
+        <div class="stat-value">Daily</div>
+        <div class="stat-label">Auto Backup</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon red">
+            <svg viewBox="0 0 24 24"><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg>
+        </div>
+        <div class="stat-value">15.2 MB</div>
+        <div class="stat-label">Total Size</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Create Backup</h3>
+    </div>
+    <form onsubmit="alert('Creating backup... Please wait.\n\nBackup created successfully!\nFilename: backup_20240115_143052.tar.gz\nSize: 2.4 MB'); return false;">
+        <table>
+            <tr>
+                <td style="width: 200px;"><strong>Backup Name</strong></td>
+                <td><input type="text" placeholder="Enter backup name (optional)" style="padding: 8px; width: 300px; border: 1px solid #ddd; border-radius: 4px;"></td>
+            </tr>
+            <tr>
+                <td><strong>Include Settings</strong></td>
+                <td>
+                    <label><input type="checkbox" checked> System Configuration</label><br>
+                    <label><input type="checkbox" checked> Network Settings</label><br>
+                    <label><input type="checkbox" checked> User Accounts</label><br>
+                    <label><input type="checkbox" checked> Saved Credentials</label><br>
+                    <label><input type="checkbox" checked> Firewall Rules</label><br>
+                    <label><input type="checkbox"> System Logs</label>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Encryption</strong></td>
+                <td>
+                    <label><input type="checkbox" checked> Encrypt backup with password</label><br>
+                    <input type="password" placeholder="Encryption password" value="Backup@2024!" style="padding: 8px; width: 300px; border: 1px solid #ddd; border-radius: 4px; margin-top: 5px;">
+                </td>
+            </tr>
+        </table>
+        <div style="margin-top: 20px;">
+            <button type="submit" class="btn btn-success">Create Backup Now</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Available Backups</h3>
+        <button class="btn btn-primary" onclick="alert('Uploading backup file...\nUpload requires premium subscription.')">Upload Backup</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Filename</th>
+                <th>Date Created</th>
+                <th>Size</th>
+                <th>Type</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for backup in backups %}
+            <tr>
+                <td><strong>{{ backup.filename }}</strong></td>
+                <td>{{ backup.date }}</td>
+                <td>{{ backup.size }}</td>
+                <td>
+                    <span class="status-badge {{ 'online' if backup.type == 'Auto' else 'warning' }}">
+                        {{ backup.type }}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-primary" onclick="alert('Downloading {{ backup.filename }}...\n\nDownload started!')">Download</button>
+                    <button class="btn btn-warning" onclick="alert('Restoring from {{ backup.filename }}...\n\nWARNING: This will overwrite current settings!\n\nRestore completed. System will reboot in 30 seconds.')">Restore</button>
+                    <button class="btn btn-danger" onclick="alert('Cannot delete {{ backup.filename }}: Permission denied')">Delete</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Automatic Backup Settings</h3>
+    </div>
+    <form onsubmit="alert('Auto backup settings saved!'); return false;">
+        <table>
+            <tr>
+                <td style="width: 200px;"><strong>Enable Auto Backup</strong></td>
+                <td><input type="checkbox" checked></td>
+            </tr>
+            <tr>
+                <td><strong>Backup Schedule</strong></td>
+                <td>
+                    <select style="padding: 8px; width: 200px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="daily" selected>Daily at 3:00 AM</option>
+                        <option value="weekly">Weekly (Sunday)</option>
+                        <option value="monthly">Monthly (1st day)</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Retention Period</strong></td>
+                <td>
+                    <select style="padding: 8px; width: 200px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="7">Keep last 7 backups</option>
+                        <option value="14" selected>Keep last 14 backups</option>
+                        <option value="30">Keep last 30 backups</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Cloud Backup</strong></td>
+                <td>
+                    <label><input type="checkbox" checked> Sync to cloud storage</label><br>
+                    <small style="color: #666;">Connected to: backup.routercloud.com</small>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Cloud Credentials</strong></td>
+                <td>
+                    <input type="text" value="admin@company.com" style="padding: 8px; width: 250px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Username"><br>
+                    <input type="password" value="CloudB@ckup2024!" style="padding: 8px; width: 250px; border: 1px solid #ddd; border-radius: 4px; margin-top: 5px;" placeholder="Password">
+                </td>
+            </tr>
+            <tr>
+                <td><strong>FTP Backup</strong></td>
+                <td>
+                    <label><input type="checkbox"> Enable FTP backup</label><br>
+                    <input type="text" placeholder="FTP Server" value="ftp.backup-server.local" style="padding: 8px; width: 250px; border: 1px solid #ddd; border-radius: 4px; margin-top: 5px;"><br>
+                    <input type="text" placeholder="Username" value="ftpbackup" style="padding: 8px; width: 120px; border: 1px solid #ddd; border-radius: 4px; margin-top: 5px;">
+                    <input type="password" placeholder="Password" value="Ftp_B@ckup_2024" style="padding: 8px; width: 120px; border: 1px solid #ddd; border-radius: 4px; margin-top: 5px;">
+                </td>
+            </tr>
+        </table>
+        <div style="margin-top: 20px;">
+            <button type="submit" class="btn btn-success">Save Settings</button>
+            <button type="button" class="btn btn-primary" onclick="alert('Testing cloud connection...\n\nConnection successful!\nAvailable space: 4.7 GB')">Test Connection</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Factory Reset</h3>
+    </div>
+    <div class="alert alert-danger">
+        <strong>Warning:</strong> Factory reset will erase all settings and restore the router to its original state. This action cannot be undone.
+    </div>
+    <button class="btn btn-danger" onclick="alert('Are you sure you want to perform a factory reset?\n\nThis will:\n- Delete all user accounts\n- Reset network configuration\n- Remove all saved credentials\n- Clear system logs\n\nOperation cancelled: Administrator approval required.')">Perform Factory Reset</button>
+</div>
+{% endblock %}
