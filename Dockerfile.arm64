@@ -1,0 +1,97 @@
+# Honeypot Security System - Raspberry Pi 3 ARM64
+# Optimized for Debian 13 (Trixie) / Raspberry Pi OS 64-bit
+# Multi-stage build for smaller image size
+
+# ==============================================================================
+# Stage 1: Builder
+# ==============================================================================
+FROM python:3.11-slim-bookworm AS builder
+
+# Set platform explicitly for ARM64
+ARG TARGETPLATFORM=linux/arm64
+
+# Install build dependencies for ARM64
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    libffi-dev \
+    libssl-dev \
+    cargo \
+    rustc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Upgrade pip first
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Install Python dependencies
+COPY requirements.txt .
+
+# Install with optimizations for ARM64
+RUN pip install --no-cache-dir -r requirements.txt
+
+# ==============================================================================
+# Stage 2: Final Runtime Image
+# ==============================================================================
+FROM python:3.11-slim-bookworm
+
+LABEL maintainer="Honeypot Security Project"
+LABEL description="Honeypot Security System - Raspberry Pi 3 ARM64"
+LABEL version="1.0.0"
+LABEL platform="linux/arm64"
+
+# Install minimal runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssh-client \
+    iptables \
+    procps \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && rm -rf /tmp/* /var/tmp/*
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Set working directory
+WORKDIR /app
+
+# Copy application code
+COPY honeypots/ ./honeypots/
+COPY core/ ./core/
+COPY analysis/ ./analysis/
+COPY alerting/ ./alerting/
+COPY response/ ./response/
+COPY dashboard/ ./dashboard/
+COPY config/ ./config/
+COPY main.py ./
+COPY requirements.txt ./
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/logs /app/data \
+    && chmod -R 755 /app
+
+# Generate SSH host key
+RUN ssh-keygen -t rsa -b 2048 -f /app/data/ssh_host_key -N "" 2>/dev/null || true
+
+# Copy example config if needed
+RUN cp -n /app/config/config.example.yaml /app/config/config.yaml 2>/dev/null || true
+
+# Environment variables optimized for Raspberry Pi
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONOPTIMIZE=2
+ENV MALLOC_ARENA_MAX=2
+
+# Expose ports
+EXPOSE 8080 2222 5000
+
+# Health check with longer intervals for Pi
+HEALTHCHECK --interval=60s --timeout=15s --start-period=30s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/')" || exit 1
+
+# Default command
+CMD ["python", "main.py"]

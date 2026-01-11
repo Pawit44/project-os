@@ -1,0 +1,85 @@
+# Honeypot Security System - Docker Compose
+# Optimized for Raspberry Pi 3 - Debian 13 (Trixie) ARM64
+#
+# Usage:
+#   Build:  docker compose -f docker-compose.arm64.yml build
+#   Run:    docker compose -f docker-compose.arm64.yml up -d
+#   Logs:   docker compose -f docker-compose.arm64.yml logs -f
+#   Stop:   docker compose -f docker-compose.arm64.yml down
+
+services:
+  honeypot:
+    build:
+      context: .
+      dockerfile: Dockerfile.arm64
+      platforms:
+        - linux/arm64
+    image: honeypot-security:arm64
+    container_name: honeypot-pi3
+    restart: unless-stopped
+    platform: linux/arm64
+
+    # Required for iptables (auto-blocking)
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
+    ports:
+      # Web Honeypot
+      - "8080:8080"
+      # SSH Honeypot
+      - "2222:2222"
+      # Dashboard
+      - "5000:5000"
+
+    volumes:
+      # Persist configuration
+      - ./config/config.yaml:/app/config/config.yaml:ro
+      # Persist data (database, SSH key, GeoIP)
+      - honeypot-data:/app/data
+      # Persist logs
+      - honeypot-logs:/app/logs
+
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONOPTIMIZE=2
+      - TZ=Asia/Bangkok
+      # Memory optimization for Pi 3 (1GB RAM)
+      - MALLOC_ARENA_MAX=2
+
+    # Resource limits for Raspberry Pi 3 (1GB RAM)
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+    networks:
+      - honeypot-net
+
+    # Health check with longer intervals for Pi
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/')"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 45s
+
+    # Logging configuration - reduced for SD card longevity
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+volumes:
+  honeypot-data:
+    driver: local
+  honeypot-logs:
+    driver: local
+
+networks:
+  honeypot-net:
+    driver: bridge
