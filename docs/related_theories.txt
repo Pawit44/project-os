@@ -1,0 +1,428 @@
+================================================================================
+                    ทฤษฎีที่เกี่ยวข้องกับระบบ Honeypot Security
+================================================================================
+
+1. HONEYPOT THEORY (ทฤษฎี Honeypot)
+--------------------------------------------------------------------------------
+
+นิยาม:
+    Honeypot คือระบบคอมพิวเตอร์ที่ถูกออกแบบมาเพื่อล่อลวงผู้โจมตี
+    โดยจำลองเป็นเป้าหมายที่มีช่องโหว่ เพื่อเก็บข้อมูลพฤติกรรมการโจมตี
+
+ประเภทของ Honeypot:
+    - Low-Interaction Honeypot  : จำลองบริการบางส่วน เก็บข้อมูลเบื้องต้น
+    - Medium-Interaction Honeypot: จำลองบริการได้มากขึ้น มี response ที่สมจริง
+    - High-Interaction Honeypot : ระบบจริงที่ถูก monitor ทุกการกระทำ
+
+วัตถุประสงค์:
+    1. ตรวจจับการโจมตี (Detection)
+    2. เก็บข้อมูลพฤติกรรมผู้โจมตี (Intelligence Gathering)
+    3. เบี่ยงเบนความสนใจจากระบบจริง (Deception)
+    4. ศึกษาเทคนิคการโจมตีใหม่ๆ (Research)
+
+อ้างอิง:
+    Spitzner, L. (2003). Honeypots: Tracking Hackers. Addison-Wesley.
+
+
+2. DEFENSE IN DEPTH (การป้องกันแบบหลายชั้น)
+--------------------------------------------------------------------------------
+
+แนวคิด:
+    การรักษาความปลอดภัยแบบหลายระดับ ไม่พึ่งพาการป้องกันเพียงจุดเดียว
+
+โครงสร้างการป้องกัน:
+    +-----------------------------------------------+
+    |  Layer 1: Perimeter Security (Firewall)       |
+    |  +---------------------------------------+    |
+    |  | Layer 2: Network Security (IDS/IPS)   |    |
+    |  | +-------------------------------+     |    |
+    |  | | Layer 3: Host Security        |     |    |
+    |  | | +-------------------------+   |     |    |
+    |  | | | Layer 4: Application    |   |     |    |
+    |  | | |         Security        |   |     |    |
+    |  | | +-------------------------+   |     |    |
+    |  | +-------------------------------+     |    |
+    |  +---------------------------------------+    |
+    +-----------------------------------------------+
+
+ตำแหน่งของ Honeypot:
+    อยู่ในชั้น Network Security ทำหน้าที่ตรวจจับและเก็บข้อมูลการโจมตี
+
+อ้างอิง:
+    NIST SP 800-53: Security and Privacy Controls
+
+
+3. INTRUSION DETECTION SYSTEM (IDS)
+--------------------------------------------------------------------------------
+
+นิยาม:
+    ระบบตรวจจับการบุกรุก ทำหน้าที่ monitor และวิเคราะห์ traffic
+    เพื่อหาสัญญาณของการโจมตี
+
+ประเภทการตรวจจับ:
+
+    1. Signature-based Detection
+       - ตรวจจับจาก pattern ที่รู้จักแล้ว
+       - ข้อดี: แม่นยำสำหรับการโจมตีที่รู้จัก
+       - ข้อเสีย: ไม่สามารถตรวจจับการโจมตีใหม่ได้
+
+    2. Anomaly-based Detection
+       - ตรวจจับพฤติกรรมที่ผิดปกติจาก baseline
+       - ข้อดี: ตรวจจับการโจมตีใหม่ได้
+       - ข้อเสีย: มี False Positive สูง
+
+    3. Hybrid Detection
+       - ผสมผสานทั้งสองวิธี
+       - ใช้ Signature สำหรับการโจมตีที่รู้จัก
+       - ใช้ Anomaly สำหรับพฤติกรรมผิดปกติ
+
+ในโปรเจคนี้:
+    ใช้ Signature-based สำหรับตรวจจับ SQL Injection patterns
+
+อ้างอิง:
+    NIST SP 800-94: Guide to Intrusion Detection and Prevention Systems
+
+
+4. SQL INJECTION ATTACK
+--------------------------------------------------------------------------------
+
+นิยาม:
+    เทคนิคการโจมตีที่ผู้โจมตีแทรก SQL code ผ่าน input ของ application
+    เพื่อเข้าถึงหรือแก้ไขข้อมูลในฐานข้อมูล
+
+ประเภทของ SQL Injection:
+
+    +------------------+------------------------------------------------+
+    | Type             | Description                                    |
+    +------------------+------------------------------------------------+
+    | In-band SQLi     | ใช้ช่องทางเดียวกันในการโจมตีและรับผลลัพธ์       |
+    | Blind SQLi       | ไม่เห็นผลลัพธ์โดยตรง ใช้ True/False inference   |
+    | Out-of-band SQLi | ใช้ช่องทางอื่นในการรับข้อมูล (DNS, HTTP)       |
+    +------------------+------------------------------------------------+
+
+Pattern ที่ใช้ในการโจมตี:
+    ' OR '1'='1
+    " OR ""="
+    '; DROP TABLE users--
+    ' UNION SELECT * FROM users--
+    1' AND '1'='1
+
+การป้องกัน:
+    1. Prepared Statements (Parameterized Queries)
+    2. Input Validation
+    3. Escaping User Input
+    4. Least Privilege Database Access
+
+อ้างอิง:
+    OWASP. (2021). SQL Injection Prevention Cheat Sheet.
+
+
+5. SSH PROTOCOL & BRUTE FORCE ATTACK
+--------------------------------------------------------------------------------
+
+SSH (Secure Shell):
+    โปรโตคอลสำหรับการเชื่อมต่อระยะไกลแบบเข้ารหัส
+    ใช้ port 22 เป็นค่าเริ่มต้น
+
+Brute Force Attack:
+    การโจมตีโดยลองรหัสผ่านทุกความเป็นไปได้จนกว่าจะสำเร็จ
+
+ประเภทของ Brute Force:
+
+    1. Simple Brute Force
+       - ลองทุกตัวอักษรที่เป็นไปได้
+       - ใช้เวลานานมาก
+
+    2. Dictionary Attack
+       - ใช้รายการรหัสผ่านที่พบบ่อย
+       - เร็วกว่า Simple Brute Force
+
+    3. Credential Stuffing
+       - ใช้ข้อมูล username/password ที่รั่วไหลจากที่อื่น
+       - อาศัยการใช้รหัสผ่านซ้ำของผู้ใช้
+
+    4. Hybrid Attack
+       - ผสมผสาน Dictionary กับการเปลี่ยนแปลงเล็กน้อย
+       - เช่น password -> p@ssw0rd, Password1
+
+การป้องกัน:
+    - Rate limiting (จำกัดจำนวนครั้งที่ลองได้)
+    - Account lockout (ล็อคบัญชีหลังลองผิดหลายครั้ง)
+    - IP blocking (บล็อค IP ที่โจมตี)
+    - Multi-factor Authentication
+    - Strong password policy
+
+อ้างอิง:
+    NIST SP 800-63B: Digital Identity Guidelines
+
+
+6. THREAT INTELLIGENCE
+--------------------------------------------------------------------------------
+
+นิยาม:
+    การรวบรวม ประมวลผล และวิเคราะห์ข้อมูลเกี่ยวกับภัยคุกคาม
+    เพื่อนำไปใช้ในการป้องกันและตอบสนองต่อการโจมตี
+
+ประเภทของ Threat Intelligence:
+
+    1. Strategic Intelligence
+       - ข้อมูลระดับสูง สำหรับผู้บริหาร
+       - แนวโน้มภัยคุกคาม, ผลกระทบทางธุรกิจ
+
+    2. Tactical Intelligence
+       - เทคนิคและวิธีการของผู้โจมตี (TTPs)
+       - ใช้ในการปรับปรุงการป้องกัน
+
+    3. Operational Intelligence
+       - ข้อมูลเฉพาะเจาะจงเกี่ยวกับการโจมตี
+       - IP addresses, domains, file hashes
+
+    4. Technical Intelligence
+       - Indicators of Compromise (IOCs)
+       - ใช้ในการตรวจจับอัตโนมัติ
+
+ข้อมูลที่เก็บในโปรเจคนี้:
+    - IP Address ของผู้โจมตี
+    - Geolocation (ประเทศ, เมือง)
+    - Credentials ที่ใช้ (username, password)
+    - Commands ที่พยายามรัน
+    - Attack patterns และ techniques
+    - Timestamp ของการโจมตี
+
+การนำไปใช้:
+    - สร้าง Blocklist สำหรับ Firewall
+    - วิเคราะห์ Trend ของการโจมตี
+    - แชร์กับองค์กรอื่น (Threat Sharing)
+    - ปรับปรุง Security Controls
+
+อ้างอิง:
+    MITRE ATT&CK Framework - https://attack.mitre.org/
+
+
+7. GEOIP TECHNOLOGY
+--------------------------------------------------------------------------------
+
+นิยาม:
+    เทคโนโลยีที่ใช้แปลง IP Address เป็นตำแหน่งทางภูมิศาสตร์
+
+หลักการทำงาน:
+    1. Regional Internet Registries (RIRs) จัดสรร IP blocks ให้แต่ละภูมิภาค
+       - ARIN (North America)
+       - RIPE NCC (Europe)
+       - APNIC (Asia Pacific)
+       - LACNIC (Latin America)
+       - AFRINIC (Africa)
+
+    2. ISPs ได้รับ IP blocks และจัดสรรให้ลูกค้า
+
+    3. GeoIP providers รวบรวมข้อมูลและสร้าง database
+       - IP Range -> Country, City, ISP
+
+    4. Application query database เพื่อหาตำแหน่ง
+
+ความแม่นยำ:
+    - ระดับประเทศ: 95-99%
+    - ระดับเมือง: 50-80%
+    - ระดับ ISP: 90%+
+
+ข้อจำกัด:
+    - Private IP (192.168.x.x, 10.x.x.x) ไม่สามารถระบุตำแหน่งได้
+    - VPN/Proxy ทำให้ตำแหน่งไม่ถูกต้อง
+    - Mobile IP อาจเปลี่ยนแปลงบ่อย
+
+ในโปรเจคนี้:
+    ใช้ MaxMind GeoLite2 Database (ฟรี)
+
+อ้างอิง:
+    MaxMind GeoIP2 Documentation
+
+
+8. CONTAINERIZATION (DOCKER)
+--------------------------------------------------------------------------------
+
+นิยาม:
+    เทคโนโลยีที่บรรจุ application และ dependencies ทั้งหมดไว้ใน container
+    ทำให้สามารถรันได้ทุกที่ที่มี container runtime
+
+ความแตกต่างจาก Virtual Machine:
+
+    Virtual Machine:
+    +------------------------------------------+
+    | App A    | App B    | App C             |
+    +----------+----------+-------------------+
+    | Guest OS | Guest OS | Guest OS          |
+    +----------+----------+-------------------+
+    |          Hypervisor                     |
+    +------------------------------------------+
+    |          Host OS                        |
+    +------------------------------------------+
+    |          Hardware                       |
+    +------------------------------------------+
+
+    Container:
+    +------------------------------------------+
+    | App A    | App B    | App C             |
+    +----------+----------+-------------------+
+    |       Container Runtime (Docker)        |
+    +------------------------------------------+
+    |          Host OS                        |
+    +------------------------------------------+
+    |          Hardware                       |
+    +------------------------------------------+
+
+ข้อดีสำหรับ Honeypot:
+    1. Isolation     - แยกจากระบบหลัก ลดความเสี่ยง
+    2. Portability   - deploy ได้ทุกที่ (Cloud, On-premise)
+    3. Reproducibility - สภาพแวดล้อมเหมือนกันเสมอ
+    4. Easy Recovery - ถ้าถูกโจมตี สามารถ recreate ได้ง่าย
+    5. Resource Efficiency - ใช้ทรัพยากรน้อยกว่า VM
+
+Docker Compose:
+    เครื่องมือสำหรับ define และ run multi-container applications
+    ใช้ YAML file ในการกำหนด configuration
+
+อ้างอิง:
+    Docker Documentation - https://docs.docker.com/
+
+
+9. OWASP TOP 10
+--------------------------------------------------------------------------------
+
+นิยาม:
+    รายการช่องโหว่ที่พบบ่อยและอันตรายที่สุด 10 อันดับ
+    สำหรับ Web Application จัดทำโดย OWASP Foundation
+
+OWASP Top 10 (2021):
+
+    +-------+------------------------------------------+-------------+
+    | Rank  | Vulnerability                            | ในโปรเจค   |
+    +-------+------------------------------------------+-------------+
+    | A01   | Broken Access Control                    |             |
+    | A02   | Cryptographic Failures                   |             |
+    | A03   | Injection (SQL, Command, etc.)           | ตรวจจับ    |
+    | A04   | Insecure Design                          |             |
+    | A05   | Security Misconfiguration                |             |
+    | A06   | Vulnerable and Outdated Components       |             |
+    | A07   | Identification & Authentication Failures | เก็บข้อมูล |
+    | A08   | Software and Data Integrity Failures     |             |
+    | A09   | Security Logging and Monitoring Failures |             |
+    | A10   | Server-Side Request Forgery (SSRF)       |             |
+    +-------+------------------------------------------+-------------+
+
+A03: Injection
+    - SQL Injection
+    - Command Injection
+    - LDAP Injection
+    - XPath Injection
+
+A07: Identification and Authentication Failures
+    - Weak passwords
+    - Credential stuffing
+    - Session hijacking
+    - Brute force attacks
+
+อ้างอิง:
+    OWASP Foundation. (2021). OWASP Top 10 Web Application Security Risks.
+    https://owasp.org/Top10/
+
+
+10. CYBER KILL CHAIN
+--------------------------------------------------------------------------------
+
+นิยาม:
+    โมเดลที่อธิบายขั้นตอนการโจมตีของ Hacker ตั้งแต่เริ่มต้นจนสำเร็จ
+    พัฒนาโดย Lockheed Martin
+
+ขั้นตอนการโจมตี:
+
+    1. Reconnaissance (สำรวจ)
+       - รวบรวมข้อมูลเป้าหมาย
+       - ค้นหาช่องโหว่
+       >>> Honeypot ตรวจจับได้ที่ขั้นตอนนี้ <<<
+
+    2. Weaponization (สร้างอาวุธ)
+       - สร้าง malware หรือ exploit
+       - เตรียมเครื่องมือโจมตี
+
+    3. Delivery (ส่งมอบ)
+       - ส่ง malware ไปยังเป้าหมาย
+       - Email, USB, Web download
+
+    4. Exploitation (ใช้ช่องโหว่)
+       - รัน exploit code
+       - เข้าถึงระบบเป้าหมาย
+       >>> Honeypot ตรวจจับได้ที่ขั้นตอนนี้ <<<
+
+    5. Installation (ติดตั้ง)
+       - ติดตั้ง backdoor หรือ malware
+       - สร้าง persistence
+
+    6. Command & Control (C2)
+       - เชื่อมต่อกับ C2 server
+       - รับคำสั่งจากผู้โจมตี
+
+    7. Actions on Objectives (บรรลุเป้าหมาย)
+       - ขโมยข้อมูล
+       - เข้ารหัสไฟล์ (Ransomware)
+       - ทำลายระบบ
+
+ประโยชน์ของ Honeypot ใน Kill Chain:
+    - ตรวจจับในขั้น Reconnaissance และ Exploitation
+    - เก็บข้อมูลเทคนิคการโจมตี
+    - เตือนภัยล่วงหน้าก่อนถึงระบบจริง
+
+อ้างอิง:
+    Lockheed Martin. (2011). Cyber Kill Chain Framework.
+    https://www.lockheedmartin.com/en-us/capabilities/cyber/cyber-kill-chain.html
+
+
+================================================================================
+                              แหล่งอ้างอิง
+================================================================================
+
+หนังสือและบทความวิชาการ:
+-------------------------
+1. Spitzner, L. (2003). Honeypots: Tracking Hackers. Addison-Wesley.
+
+2. Provos, N., & Holz, T. (2007). Virtual Honeypots: From Botnet Tracking
+   to Intrusion Detection. Addison-Wesley.
+
+3. Nawrocki, M., et al. (2016). A Survey on Honeypot Software and Data
+   Analysis. arXiv preprint arXiv:1608.06249.
+
+
+มาตรฐานและแนวปฏิบัติ:
+--------------------
+4. NIST SP 800-94: Guide to Intrusion Detection and Prevention Systems (IDPS)
+
+5. NIST SP 800-53: Security and Privacy Controls for Information Systems
+
+6. NIST SP 800-63B: Digital Identity Guidelines - Authentication
+
+7. ISO/IEC 27001: Information Security Management Systems
+
+
+แหล่งข้อมูลออนไลน์:
+------------------
+8. OWASP Foundation - https://owasp.org/
+   - OWASP Top 10
+   - SQL Injection Prevention Cheat Sheet
+   - Authentication Cheat Sheet
+
+9. MITRE ATT&CK Framework - https://attack.mitre.org/
+   - Adversary Tactics and Techniques
+
+10. Lockheed Martin Cyber Kill Chain
+    https://www.lockheedmartin.com/en-us/capabilities/cyber/cyber-kill-chain.html
+
+11. MaxMind GeoIP Documentation
+    https://dev.maxmind.com/geoip/
+
+12. Docker Documentation
+    https://docs.docker.com/
+
+
+================================================================================
+                          สร้างโดย: Honeypot Security Project
+                          วันที่: 2026
+================================================================================
