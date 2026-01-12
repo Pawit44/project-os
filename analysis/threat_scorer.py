@@ -220,6 +220,9 @@ class ThreatScorer:
 
     def _level_meets_threshold(self, level: str, threshold: str) -> bool:
         """Check if threat level meets or exceeds threshold"""
+        # ALL threshold = always alert on every attack
+        if threshold.upper() == 'ALL':
+            return True
         level_order = {self.LEVEL_LOW: 1, self.LEVEL_MEDIUM: 2, self.LEVEL_HIGH: 3}
         return level_order.get(level, 0) >= level_order.get(threshold, 0)
 

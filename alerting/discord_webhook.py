@@ -59,6 +59,10 @@ class DiscordAlert:
 
     def _is_rate_limited(self, ip_address: str) -> bool:
         """Check if IP is rate limited"""
+        # rate_limit = 0 means no rate limiting (alert every attack)
+        if self.rate_limit <= 0:
+            return False
+
         with self._lock:
             last_time = self._last_alert.get(ip_address, 0)
             current_time = time.time()

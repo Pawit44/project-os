@@ -20,9 +20,10 @@ alerting:
   discord:
     enabled: true
     webhook_url: "YOUR_DISCORD_WEBHOOK_URL_HERE"
-    # Minimum threat level to trigger alert: LOW, MEDIUM, HIGH
+    # Minimum threat level to trigger alert: ALL, LOW, MEDIUM, HIGH
+    # ALL = alert on every attack regardless of threat level
     alert_threshold: "MEDIUM"
-    # Rate limit: minimum seconds between alerts for same IP
+    # Rate limit: minimum seconds between alerts for same IP (0 = no limit)
     rate_limit: 60
 
 # Threat Scoring Configuration
