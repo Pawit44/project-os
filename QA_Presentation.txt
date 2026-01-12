@@ -1,0 +1,244 @@
+============================================================
+    คำถามที่คาดว่าอาจารย์อาจถาม - โครงงาน Honeypot
+    ENG23 3054 ระบบปฏิบัติการ | กลุ่ม 9
+============================================================
+
+------------------------------------------------------------
+หมวดที่ 1: ความรู้พื้นฐานเกี่ยวกับ Honeypot
+------------------------------------------------------------
+
+Q1: Honeypot คืออะไร? ทำงานอย่างไร?
+A1: Honeypot คือระบบคอมพิวเตอร์ที่ถูกตั้งขึ้นเพื่อเป็น "เป้าหลอก" หรือ "กับดัก"
+    สำหรับดึงดูดผู้โจมตี โดยจำลองให้ดูเหมือนระบบจริงที่มีช่องโหว่
+    เมื่อผู้โจมตีพยายามเจาะระบบ Honeypot จะบันทึกทุกพฤติกรรม
+    ทำให้เราสามารถศึกษาเทคนิคการโจมตีได้โดยไม่ต้องเสี่ยงกับระบบจริง
+
+Q2: Honeypot มีกี่ประเภท? โครงงานนี้ใช้ประเภทไหน?
+A2: Honeypot แบ่งเป็น 2 ประเภทหลัก:
+    1. Low-interaction Honeypot - จำลองเฉพาะ service บางส่วน ปลอดภัยกว่า
+    2. High-interaction Honeypot - จำลองระบบเต็มรูปแบบ ได้ข้อมูลละเอียดกว่า
+
+    โครงงานนี้ใช้ Medium-interaction Honeypot ผ่าน Cowrie
+    ซึ่งจำลอง SSH และ Web Application ได้ข้อมูลเพียงพอและปลอดภัย
+
+Q3: ทำไมถึงเลือกใช้ Honeypot แทนที่จะใช้ Firewall หรือ IDS อย่างเดียว?
+A3: Firewall และ IDS เป็นการป้องกันเชิงรับ (Reactive) รอให้เกิดการโจมตีก่อน
+    แต่ Honeypot เป็นการป้องกันเชิงรุก (Proactive) ที่ช่วยให้เรา:
+    - ศึกษาเทคนิคการโจมตีใหม่ๆ ล่วงหน้า
+    - เบี่ยงเบนความสนใจผู้โจมตีจากระบบจริง
+    - เก็บหลักฐานสำหรับการวิเคราะห์ forensic
+    - ไม่มี false positive เพราะทุก traffic ที่เข้ามาคือการโจมตี
+
+------------------------------------------------------------
+หมวดที่ 2: เกี่ยวกับ Raspberry Pi
+------------------------------------------------------------
+
+Q4: ทำไมถึงเลือกใช้ Raspberry Pi 3?
+A4: เลือก Raspberry Pi 3 เพราะ:
+    - ราคาถูก ประมาณ 1,500 บาท
+    - ขนาดเล็ก ซ่อนได้ง่ายในเครือข่าย
+    - ใช้พลังงานต่ำ (5V, 2.5A) ประมาณ 12.5W
+    - รองรับ Linux OS ที่ใช้รัน Honeypot software ได้
+    - มี Network Interface ในตัว
+    - เหมาะสำหรับ Deploy ในสภาพแวดล้อมจริง
+
+Q5: Raspberry Pi 3 มีข้อจำกัดอะไรบ้าง?
+A5: ข้อจำกัดหลัก:
+    - CPU: 1.2GHz Quad-core (ไม่แรงมาก)
+    - RAM: 1GB (จำกัดการรัน ML model)
+    - Storage: ใช้ SD Card ซึ่งอาจช้าและเสียง่าย
+    - ไม่รองรับ Machine Learning ที่ต้องใช้ทรัพยากรสูง
+
+    ทางแก้: ใช้ Pi 4/5 หรือส่ง log ไปประมวลผลบน Cloud
+
+Q6: Spec ของ Raspberry Pi 3 มีอะไรบ้าง?
+A6: - CPU: Broadcom BCM2837 1.2GHz 64-bit Quad-core ARM Cortex-A53
+    - RAM: 1GB LPDDR2
+    - Network: 10/100 Ethernet, WiFi 802.11n, Bluetooth 4.1
+    - GPIO: 40 pins
+    - USB: 4x USB 2.0 ports
+    - Storage: MicroSD slot
+    - Power: 5V/2.5A via Micro USB
+
+------------------------------------------------------------
+หมวดที่ 3: เกี่ยวกับ SSH Protocol
+------------------------------------------------------------
+
+Q7: SSH คืออะไร? ทำไมถึงเลือก monitor SSH?
+A7: SSH (Secure Shell) คือโปรโตคอลสำหรับการเชื่อมต่อและควบคุม
+    เครื่อง server จากระยะไกลอย่างปลอดภัย ใช้ port 22 เป็นค่า default
+
+    เลือก monitor SSH เพราะ:
+    - เป็นช่องทางยอดนิยมที่ hacker ใช้โจมตี
+    - Brute-force attack ผ่าน SSH พบบ่อยมาก
+    - ถ้าเจาะ SSH ได้ = ได้ shell access เข้าเครื่อง
+
+Q8: SSH Brute-force attack คืออะไร?
+A8: คือการพยายามเข้าสู่ระบบโดยการสุ่มทดลอง username/password
+    จำนวนมากๆ จนกว่าจะเจอที่ถูกต้อง
+
+    ตัวอย่าง username ที่ถูกลองบ่อย: root, admin, ubuntu, pi
+    ตัวอย่าง password ที่ถูกลองบ่อย: 123456, password, admin, root
+
+Q9: Honeypot บันทึกข้อมูล SSH อะไรบ้าง?
+A9: ข้อมูลที่บันทึก:
+    - IP address ของผู้โจมตี
+    - Timestamp ของการโจมตี
+    - Username/Password ที่พยายามใช้
+    - Commands ที่พิมพ์หลังจาก login สำเร็จ
+    - Session duration
+    - Files ที่พยายาม upload/download
+
+------------------------------------------------------------
+หมวดที่ 4: เกี่ยวกับระบบปฏิบัติการ (OS)
+------------------------------------------------------------
+
+Q10: โครงงานนี้เกี่ยวข้องกับวิชาระบบปฏิบัติการอย่างไร?
+A10: เกี่ยวข้องหลายด้าน:
+     1. Process Management - Honeypot ทำงานเป็น daemon process
+     2. File System - บันทึก log ลง file system
+     3. Network Stack - รับ connection ผ่าน TCP/IP stack ของ OS
+     4. User/Permission - จัดการ user accounts และ permissions
+     5. System Calls - ใช้ system calls ในการ listen port, fork process
+     6. Security - ใช้ sandbox และ chroot เพื่อแยก honeypot จากระบบจริง
+
+Q11: Honeypot ใช้ OS อะไร?
+A11: ใช้ Raspberry Pi OS (based on Debian Linux)
+     - เป็น Linux distribution ที่ออกแบบมาสำหรับ Raspberry Pi
+     - รองรับ ARM architecture
+     - มี package manager (apt) สำหรับติดตั้ง software
+     - รองรับ Python ที่ใช้รัน Cowrie honeypot
+
+Q12: Daemon Process คืออะไร?
+A12: Daemon คือ background process ที่ทำงานต่อเนื่องโดยไม่ต้องมี
+     user interaction โดย Honeypot จะรันเป็น daemon เพื่อ:
+     - ทำงานตลอด 24/7
+     - ไม่ต้องมี terminal attach
+     - เริ่มทำงานอัตโนมัติตอน boot
+     - ใช้ systemd หรือ init.d ในการจัดการ
+
+------------------------------------------------------------
+หมวดที่ 5: การวิเคราะห์และความปลอดภัย
+------------------------------------------------------------
+
+Q13: วิเคราะห์ระดับความอันตรายอย่างไร?
+A13: ใช้เกณฑ์หลายอย่างในการประเมิน:
+     - จำนวนครั้งที่พยายาม login (frequency)
+     - Commands ที่พิมพ์ (เช่น wget malware, rm -rf)
+     - ระยะเวลาที่อยู่ในระบบ
+     - พยายาม privilege escalation หรือไม่
+     - พยายาม lateral movement หรือไม่
+
+     แบ่งระดับ: Low, Medium, High, Critical
+
+Q14: ข้อมูลที่เก็บได้นำไปใช้อะไรได้บ้าง?
+A14: นำไปใช้ได้หลายอย่าง:
+     - ศึกษารูปแบบการโจมตี (Attack patterns)
+     - สร้าง blacklist IP
+     - ปรับปรุง firewall rules
+     - Training data สำหรับ ML model
+     - Security awareness training
+     - Threat intelligence sharing
+
+Q15: Honeypot มีความเสี่ยงอะไรบ้าง?
+A15: ความเสี่ยงที่อาจเกิดขึ้น:
+     1. ถูกใช้เป็นฐานโจมตีระบบอื่น (ถ้า configure ไม่ดี)
+     2. ผู้โจมตีรู้ว่าเป็น honeypot แล้วหลีกเลี่ยง
+     3. ใช้ทรัพยากรระบบ
+     4. Legal issues ถ้าเก็บข้อมูลบางประเภท
+
+     การป้องกัน: ใช้ network isolation, ตั้ง outbound rules
+
+------------------------------------------------------------
+หมวดที่ 6: Technical Implementation
+------------------------------------------------------------
+
+Q16: ใช้ Software/Tools อะไรบ้าง?
+A16: - Cowrie: SSH/Telnet Honeypot (Python-based)
+     - Flask/FastAPI: Web Application Honeypot
+     - SQLite/MySQL: เก็บ log data
+     - Grafana/Custom Dashboard: แสดงผลข้อมูล
+     - Raspberry Pi OS: Operating System
+
+Q17: Cowrie คืออะไร? ทำงานอย่างไร?
+A17: Cowrie คือ medium-interaction SSH honeypot ที่:
+     - จำลอง SSH server ให้ดูเหมือนจริง
+     - บันทึกทุก login attempts
+     - ให้ fake shell environment หลัง login
+     - บันทึกทุก commands และ files
+     - เขียนด้วย Python, open-source
+
+Q18: ทำไมไม่ใช้ Machine Learning?
+A18: เหตุผลหลัก:
+     - Raspberry Pi 3 มี RAM แค่ 1GB
+     - ML Model ต้องใช้ RAM มาก (เช่น TensorFlow ~500MB+)
+     - CPU ไม่แรงพอสำหรับ inference แบบ real-time
+
+     ทางเลือก:
+     - ใช้ TensorFlow Lite (lightweight)
+     - ส่ง data ไป Cloud แล้ว analyze ที่นั่น
+     - Upgrade เป็น Pi 4/5 ที่มี RAM 4-8GB
+
+------------------------------------------------------------
+หมวดที่ 7: คำถามเชิงวิเคราะห์
+------------------------------------------------------------
+
+Q19: ถ้าต้องปรับปรุงโครงงานนี้ จะทำอะไร?
+A19: สิ่งที่จะปรับปรุง:
+     1. เพิ่ม ML สำหรับ anomaly detection
+     2. เพิ่ม protocol อื่นๆ (FTP, HTTP, SMTP)
+     3. ทำ distributed honeypot หลายตัว
+     4. เพิ่ม real-time alerting (LINE, Email)
+     5. Integration กับ SIEM systems
+     6. GeoIP mapping แสดงแผนที่การโจมตี
+
+Q20: Honeypot vs IDS (Intrusion Detection System) ต่างกันอย่างไร?
+A20:
+     IDS:
+     - Monitor traffic ของระบบจริง
+     - ตรวจจับ known attack patterns
+     - มี false positives
+     - Passive monitoring
+
+     Honeypot:
+     - เป็นระบบแยกต่างหาก (decoy)
+     - ทุก traffic คือ suspicious
+     - ไม่มี false positives
+     - Active deception
+
+Q21: โครงงานนี้สามารถใช้งานจริงได้หรือไม่?
+A21: ได้ สามารถ deploy ใช้งานจริงได้โดย:
+     - วางในเครือข่ายองค์กรเพื่อตรวจจับ insider threats
+     - วางบน public IP เพื่อศึกษา attack trends
+     - ใช้เป็น early warning system
+     - ใช้ในการ security research และ education
+
+     ข้อควรระวัง: ต้อง isolate จากระบบ production
+
+------------------------------------------------------------
+หมวดที่ 8: คำถามเกี่ยวกับการ Deploy
+------------------------------------------------------------
+
+Q22: ขั้นตอนการ Deploy มีอะไรบ้าง?
+A22: 1. Flash Raspberry Pi OS ลง SD Card
+     2. Configure network (static IP recommended)
+     3. Install dependencies (Python, pip packages)
+     4. Install และ configure Cowrie
+     5. Setup Web Application Honeypot
+     6. Configure logging และ database
+     7. Setup dashboard
+     8. Test และ verify ว่าทำงานถูกต้อง
+     9. Configure firewall rules
+     10. Monitor และ maintain
+
+Q23: จะรู้ได้อย่างไรว่า Honeypot ทำงานปกติ?
+A23: วิธีตรวจสอบ:
+     - Check process: ps aux | grep cowrie
+     - Check listening ports: netstat -tlnp
+     - Check logs: tail -f /var/log/cowrie/cowrie.log
+     - Test login จากเครื่องอื่น
+     - Monitor dashboard ว่ามี data เข้ามาหรือไม่
+
+============================================================
+                     จบคำถาม-คำตอบ
+============================================================

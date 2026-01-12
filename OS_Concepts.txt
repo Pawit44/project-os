@@ -1,0 +1,256 @@
+============================================================
+    Operating System Concepts ที่ใช้ในโครงงาน Honeypot
+    ENG23 3054 ระบบปฏิบัติการ | กลุ่ม 9
+============================================================
+
+------------------------------------------------------------
+1. Raspberry Pi 3 Specifications
+------------------------------------------------------------
+
+| Component | Specification                                      |
+|-----------|----------------------------------------------------|
+| CPU       | Broadcom BCM2837 1.2GHz 64-bit Quad-core ARM       |
+| RAM       | 1GB LPDDR2                                         |
+| Storage   | MicroSD Card                                       |
+| Network   | 10/100 Ethernet, WiFi 802.11n                      |
+| OS        | Raspberry Pi OS (Debian-based Linux)               |
+| Power     | 5V/2.5A (~12.5W)                                   |
+
+------------------------------------------------------------
+2. OS Concepts ที่ใช้ในโครงงาน
+------------------------------------------------------------
+
+[2.1] Process Management
+------------------------
+- Honeypot ทำงานเป็น Daemon Process ผ่าน systemd
+- ใช้คำสั่ง systemctl ในการจัดการ service (start, stop, restart)
+- มีการใช้ fork() system call สร้าง child process รับ connection
+- แต่ละ connection ที่เข้ามา = 1 child process
+
+ตัวอย่างการทำงาน:
+    Parent Process (Honeypot)
+         |
+         +-- fork() --> Child Process (Connection #1)
+         |
+         +-- fork() --> Child Process (Connection #2)
+         |
+         +-- fork() --> Child Process (Connection #3)
+
+
+[2.2] Memory Management
+-----------------------
+- Pi 3 มี RAM เพียง 1GB ต้องบริหารจัดการอย่างมีประสิทธิภาพ
+- ใช้ Swap Space บน SD Card เพื่อเพิ่ม virtual memory
+- ต้อง optimize โปรแกรมไม่ให้ใช้ memory เกิน
+- ถ้า memory เต็ม OOM Killer จะ kill process
+
+การตั้งค่า Swap:
+    $ sudo dphys-swapfile swapoff
+    $ sudo nano /etc/dphys-swapfile
+    CONF_SWAPSIZE=1024
+    $ sudo dphys-swapfile setup
+    $ sudo dphys-swapfile swapon
+
+ตรวจสอบ memory:
+    $ free -h
+    $ htop
+
+
+[2.3] File System Management
+----------------------------
+- ใช้ ext4 file system สำหรับเก็บ log files
+- ใช้ logrotate จัดการ log rotation ป้องกัน disk full
+- ตั้งค่า file permissions (chmod, chown) เพื่อความปลอดภัย
+
+โครงสร้าง directory:
+    /opt/honeypot/
+    ├── bin/           # executable files
+    ├── etc/           # config files
+    ├── log/           # log files
+    │   ├── ssh.log
+    │   ├── web.log
+    │   └── system.log
+    └── data/          # captured data
+
+ตั้งค่า logrotate (/etc/logrotate.d/honeypot):
+    /opt/honeypot/log/*.log {
+        daily
+        rotate 7
+        compress
+        missingok
+        notifempty
+    }
+
+
+[2.4] Network Stack
+-------------------
+- ใช้ TCP/IP Stack ของ Linux Kernel รับ connection
+- Honeypot ใช้ socket programming
+- ตั้งค่า iptables สำหรับ firewall rules
+
+Flow การรับ connection:
+    1. socket()  - สร้าง socket
+    2. bind()    - ผูกกับ port 22 (SSH) หรือ 80 (HTTP)
+    3. listen()  - รอรับ connection
+    4. accept()  - รับ connection ใหม่
+    5. fork()    - สร้าง child process
+    6. read()    - อ่านข้อมูลจาก client
+    7. write()   - ส่งข้อมูลกลับ
+    8. close()   - ปิด connection
+
+iptables rules:
+    # Allow SSH honeypot
+    $ sudo iptables -A INPUT -p tcp --dport 2222 -j ACCEPT
+
+    # Allow Web honeypot
+    $ sudo iptables -A INPUT -p tcp --dport 8080 -j ACCEPT
+
+    # Redirect real SSH to different port
+    $ sudo iptables -t nat -A PREROUTING -p tcp --dport 22 -j REDIRECT --to-port 2222
+
+
+[2.5] User and Permission Management
+------------------------------------
+- สร้าง dedicated user สำหรับรัน honeypot (ไม่ใช้ root)
+- ใช้ chroot เพื่อ isolate honeypot จากระบบหลัก
+- ตั้งค่า sudo permissions อย่างเหมาะสม
+
+สร้าง user:
+    $ sudo useradd -r -s /bin/false honeypot
+    $ sudo mkdir /opt/honeypot
+    $ sudo chown honeypot:honeypot /opt/honeypot
+
+ทำไมไม่รัน root?
+    - ถ้า honeypot ถูก exploit จะไม่ได้ root access
+    - Principle of Least Privilege
+    - ลดความเสียหายถ้าถูกโจมตี
+
+
+[2.6] I/O Management
+--------------------
+- SD Card มี I/O speed จำกัด (~20-25 MB/s)
+- ใช้ buffered I/O ในการเขียน log เพื่อลด disk write
+- ระวังการเขียน log มากเกินจะทำให้ SD Card เสื่อมเร็ว
+
+วิธี optimize I/O:
+    - ใช้ tmpfs สำหรับ temporary files
+    - Batch write logs (ไม่เขียนทุก event)
+    - ใช้ SQLite แทน text file (efficient write)
+
+
+------------------------------------------------------------
+3. System Calls ที่เกี่ยวข้อง
+------------------------------------------------------------
+
+| System Call    | การใช้งาน                                    |
+|----------------|----------------------------------------------|
+| fork()         | สร้าง child process สำหรับแต่ละ connection   |
+| exec()         | รันคำสั่งที่ผู้โจมตีพิมพ์ใน fake shell       |
+| socket()       | สร้าง network socket                         |
+| bind()         | ผูก socket กับ port (22, 80)                 |
+| listen()       | รอรับ incoming connections                   |
+| accept()       | รับ connection ใหม่                          |
+| read()/write() | อ่าน-เขียนข้อมูลจาก socket และ file          |
+| open()/close() | เปิด-ปิด log files                           |
+| chroot()       | จำกัด file system ที่เข้าถึงได้              |
+| setuid()       | เปลี่ยน user ID ของ process                  |
+| dup2()         | redirect stdin/stdout                        |
+| pipe()         | สร้าง pipe สำหรับ IPC                        |
+
+
+------------------------------------------------------------
+4. การจัดการ Service ด้วย systemd
+------------------------------------------------------------
+
+ไฟล์ /etc/systemd/system/honeypot.service:
+
+    [Unit]
+    Description=Honeypot Security Service
+    After=network.target
+    Wants=network-online.target
+
+    [Service]
+    Type=simple
+    User=honeypot
+    Group=honeypot
+    WorkingDirectory=/opt/honeypot
+    ExecStart=/opt/honeypot/bin/start.sh
+    ExecStop=/opt/honeypot/bin/stop.sh
+    Restart=always
+    RestartSec=10
+    StandardOutput=journal
+    StandardError=journal
+
+    [Install]
+    WantedBy=multi-user.target
+
+คำสั่งจัดการ service:
+    $ sudo systemctl daemon-reload      # โหลด config ใหม่
+    $ sudo systemctl start honeypot     # เริ่ม service
+    $ sudo systemctl stop honeypot      # หยุด service
+    $ sudo systemctl restart honeypot   # restart
+    $ sudo systemctl status honeypot    # ดูสถานะ
+    $ sudo systemctl enable honeypot    # start ตอน boot
+    $ sudo journalctl -u honeypot -f    # ดู logs
+
+
+------------------------------------------------------------
+5. ความสัมพันธ์ระหว่าง Pi 3 กับข้อจำกัดด้าน OS
+------------------------------------------------------------
+
+ปัญหา: ต้องการใช้ ML แต่ Pi 3 รับไม่ไหว
+
+สาเหตุในมุม OS:
+    1. Memory Constraint
+       - ML Model ต้องการ RAM 500MB-2GB
+       - Pi 3 มีแค่ 1GB รวม OS + services
+       - ถ้าใช้ ML จะทำให้ OOM Killer ทำงาน
+
+    2. CPU Constraint
+       - ML inference ต้องการ CPU สูง
+       - Pi 3 มี 1.2GHz ไม่มี GPU
+       - จะทำให้ process อื่นช้าลง (CPU scheduling)
+
+    3. I/O Constraint
+       - ML ต้อง load model จาก disk
+       - SD Card ช้า ทำให้ startup นาน
+
+ทางแก้ในมุม OS:
+    1. ใช้ cgroups จำกัด resource ของแต่ละ process
+    2. ตั้ง nice value ให้ honeypot มี priority สูงกว่า
+    3. ใช้ kernel tuning (vm.swappiness, etc.)
+    4. Offload ML ไป cloud (network I/O แทน local)
+
+
+------------------------------------------------------------
+6. คำสั่ง Linux ที่ใช้บ่อยในโครงงาน
+------------------------------------------------------------
+
+Process Management:
+    $ ps aux | grep honeypot        # ดู process
+    $ top / htop                    # monitor resources
+    $ kill -9 <PID>                 # kill process
+    $ nice -n 10 ./honeypot         # set priority
+
+Network:
+    $ netstat -tlnp                 # ดู listening ports
+    $ ss -tlnp                      # ดู sockets
+    $ tcpdump -i eth0 port 22       # capture packets
+    $ ip addr                       # ดู IP
+
+File System:
+    $ df -h                         # ดู disk usage
+    $ du -sh /opt/honeypot/log      # ดู folder size
+    $ tail -f /var/log/syslog       # ดู live log
+    $ lsof -i :22                   # ดู process ที่ใช้ port
+
+System:
+    $ uname -a                      # ดู kernel version
+    $ cat /proc/cpuinfo             # ดู CPU info
+    $ cat /proc/meminfo             # ดู memory info
+    $ uptime                        # ดู uptime
+
+
+============================================================
+                      จบเอกสาร
+============================================================
