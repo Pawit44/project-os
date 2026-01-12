@@ -66,17 +66,26 @@ SSH (Secure Shell) เป็นโปรโตคอลที่ใช้สำ�
 
 **แผนภาพกระบวนการทำงาน (System Flowchart)**
 
-* **Image Link:** [คลิกเพื่อดูรูปภาพ](https://drive.google.com/file/d/1ZuxXCthZAoIFfiPLrpsKzG2brHfMa5h6/view?usp=drive_link)
+![System Flowchart](image/System%20Flowchart.png)
 
 *(คำอธิบาย: แผนภาพแสดงลำดับการทำงานของระบบ Honeypot ตั้งแต่การรับ connection จากผู้โจมตี การบันทึก log ไปจนถึงการวิเคราะห์และแสดงผล)*
 
 ## 4. ผลการดำเนินงาน
 
-* **ผลลัพธ์ที่ 1:** [พัฒนา Software Program ที่สามารถดักจับพฤติกรรมของ Hacker ผ่าน SSH Protocol ได้สำเร็จ](https://drive.google.com/file/d/1ihVu51L_CiisfhTDCPFEGiatZ6sEs8K9/view?usp=drive_link)
+### ผลลัพธ์ที่ 1: ดักจับพฤติกรรม Hacker ผ่าน SSH Protocol
+พัฒนา Software Program ที่สามารถดักจับพฤติกรรมของ Hacker ผ่าน SSH Protocol ได้สำเร็จ
 
-* **ผลลัพธ์ที่ 2:** [พัฒนา Software Program ที่สามารถดักจับพฤติกรรมของ Hacker ผ่าน Web Application ได้สำเร็จ](https://drive.google.com/file/d/1_vw2a08nmW0sxPwq4JAgm0tdvYWwIFOF/view?usp=drive_link)
+![SSH Honeypot Result](image/result1.png)
 
-* **ผลลัพธ์ที่ 3:** [พัฒนาหน้ารายงานพฤติกรรมของ Hacker ที่สามารถแสดงระดับความอันตรายของพฤติกรรมที่ตรวจพบได้](https://drive.google.com/file/d/1jx03maNdCAsGmnB_qAtRJqxoF4rLlz_L/view?usp=drive_link)
+### ผลลัพธ์ที่ 2: ดักจับพฤติกรรม Hacker ผ่าน Web Application
+พัฒนา Software Program ที่สามารถดักจับพฤติกรรมของ Hacker ผ่าน Web Application ได้สำเร็จ
+
+![Web Honeypot Result](image/result2.png)
+
+### ผลลัพธ์ที่ 3: หน้ารายงานพฤติกรรม Hacker
+พัฒนาหน้ารายงานพฤติกรรมของ Hacker ที่สามารถแสดงระดับความอันตรายของพฤติกรรมที่ตรวจพบได้
+
+![Dashboard Result](image/result3.png)
 
 ## 5. สรุปผลการดำเนินงานและข้อเสนอแนะ
 
