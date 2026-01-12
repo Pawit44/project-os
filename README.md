@@ -66,7 +66,7 @@ SSH (Secure Shell) เป็นโปรโตคอลที่ใช้สำ�
 
 **แผนภาพกระบวนการทำงาน (System Flowchart)**
 
-![System Flowchart](https://drive.google.com/file/d/1ZuxXCthZAoIFfiPLrpsKzG2brHfMa5h6/view?usp=drive_link)
+[System Flowchart](https://drive.google.com/file/d/1ZuxXCthZAoIFfiPLrpsKzG2brHfMa5h6/view?usp=drive_link)
 
 *(คำอธิบาย: แผนภาพแสดงลำดับการทำงานของระบบ Honeypot ตั้งแต่การรับ connection จากผู้โจมตี การบันทึก log ไปจนถึงการวิเคราะห์และแสดงผล)*
 
@@ -75,17 +75,17 @@ SSH (Secure Shell) เป็นโปรโตคอลที่ใช้สำ�
 ### ผลลัพธ์ที่ 1: ดักจับพฤติกรรม Hacker ผ่าน SSH Protocol
 พัฒนา Software Program ที่สามารถดักจับพฤติกรรมของ Hacker ผ่าน SSH Protocol ได้สำเร็จ
 
-![SSH Honeypot Result](https://drive.google.com/file/d/1ihVu51L_CiisfhTDCPFEGiatZ6sEs8K9/view?usp=drive_link)
+[SSH Honeypot Result](https://drive.google.com/file/d/1ihVu51L_CiisfhTDCPFEGiatZ6sEs8K9/view?usp=drive_link)
 
 ### ผลลัพธ์ที่ 2: ดักจับพฤติกรรม Hacker ผ่าน Web Application
 พัฒนา Software Program ที่สามารถดักจับพฤติกรรมของ Hacker ผ่าน Web Application ได้สำเร็จ
 
-![Web Honeypot Result](https://drive.google.com/file/d/1_vw2a08nmW0sxPwq4JAgm0tdvYWwIFOF/view?usp=drive_link)
+[Web Honeypot Result](https://drive.google.com/file/d/1_vw2a08nmW0sxPwq4JAgm0tdvYWwIFOF/view?usp=drive_link)
 
 ### ผลลัพธ์ที่ 3: หน้ารายงานพฤติกรรม Hacker
 พัฒนาหน้ารายงานพฤติกรรมของ Hacker ที่สามารถแสดงระดับความอันตรายของพฤติกรรมที่ตรวจพบได้
 
-![Dashboard Result](https://drive.google.com/file/d/1jx03maNdCAsGmnB_qAtRJqxoF4rLlz_L/view?usp=drive_link)
+[Dashboard Result](https://drive.google.com/file/d/1jx03maNdCAsGmnB_qAtRJqxoF4rLlz_L/view?usp=drive_link)
 
 ## 5. สรุปผลการดำเนินงานและข้อเสนอแนะ
 
