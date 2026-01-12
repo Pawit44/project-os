@@ -332,6 +332,7 @@ body {
     list-style: none;
     max-height: 350px;
     overflow-y: auto;
+    padding-right: 10px;
 }
 
 .top-list li {
@@ -373,6 +374,7 @@ body {
 /* Tables */
 .table-container {
     overflow-x: auto;
+    padding-bottom: 5px;
 }
 
 .recent-attacks {
@@ -822,6 +824,7 @@ body {
 .modal-body {
     padding: 1.5rem;
     overflow-y: auto;
+    padding-right: 1.8rem;
 }
 
 .result-count {
